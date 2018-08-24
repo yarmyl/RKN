@@ -1,0 +1,13 @@
+*.pyc
+*~
+__pycashe__
+result.zip
+*.bak
+zapros.xml*
+dump.xml
+out/*
+bgp.head
+conn.conf
+white_dom.list
+iptables.tail
+iptables.head
