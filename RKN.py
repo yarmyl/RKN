@@ -277,7 +277,11 @@ class RKN:
 	
 	"""скачиваем актуальный дамп"""
 	def download(self):
-		self.__Dump.download()
+		try:
+			self.__Dump.download()
+			return 1
+		except
+			return 0
 		
 	"""Перезаписываем информацию ореестре в БД"""
 	def insert_info(self, list):
@@ -290,9 +294,15 @@ class RKN:
 	"""Получаем дату актуального дампа"""
 	def check_date(self):
 		"""datetime.datetime.fromtimestamp(self.__Dump.getLastDumpDate()//1000).strftime('%Y-%m-%d %H:%M:%S')"""
-		return self.__Dump.getLastDumpDate()//1000
+		try:
+			return self.__Dump.getLastDumpDate()//1000
+		except:
+			return 0
 	
 	"""Получаем дату дампа из БД"""
 	def check_last_update_date(self):
 		"""self.__DB.execute("SELECT updateTime FROM info")[0][0].strftime('%Y-%m-%d %H:%M:%S')"""
-		return self.__DB.execute("SELECT updateTime FROM info")[0][0].timestamp()
+		try:
+			return self.__DB.execute("SELECT updateTime FROM info")[0][0].timestamp()
+		except:
+			return 0

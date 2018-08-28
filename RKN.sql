@@ -1,0 +1,116 @@
+-- MySQL Workbench Synchronization
+-- Generated: 2018-08-27 15:37
+-- Model: New Model
+-- Version: 1.0
+-- Project: Name of the project
+-- Author: Yaroslav
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
+
+CREATE SCHEMA IF NOT EXISTS `RKN` DEFAULT CHARACTER SET utf8 ;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`contents` (
+  `id` INT(11) NOT NULL,
+  `includeTime` DATETIME NOT NULL,
+  `urgencyType` TINYINT(1) NULL DEFAULT NULL,
+  `entryType` INT(11) NOT NULL,
+  `hash` VARCHAR(45) NULL DEFAULT NULL,
+  `blockType` VARCHAR(15) NULL DEFAULT NULL,
+  `ts` DATETIME NULL DEFAULT NULL,
+  `isUse` TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf32;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`decisions` (
+  `content_id` INT(11) NOT NULL,
+  `date` DATETIME NOT NULL,
+  `number` VARCHAR(100) NOT NULL,
+  `org` VARCHAR(100) NOT NULL,
+  INDEX `fk_decisions_1_idx` (`content_id` ASC),
+  PRIMARY KEY (`content_id`),
+  CONSTRAINT `fk_decisions_1`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `RKN`.`contents` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf32;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`URLs` (
+  `content_id` INT(11) NOT NULL,
+  `url` VARCHAR(2000) NOT NULL,
+  `ts` DATETIME NULL DEFAULT NULL,
+  `domain` VARCHAR(500) NOT NULL,
+  `prot` VARCHAR(20) NULL DEFAULT NULL,
+  `port` VARCHAR(8) NULL DEFAULT NULL,
+  `isUse` TINYINT(1) NOT NULL DEFAULT 0,
+  INDEX `fk_URLs_1_idx` (`content_id` ASC),
+  CONSTRAINT `fk_URLs_1`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `RKN`.`contents` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf32;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`domains` (
+  `content_id` INT(11) NOT NULL,
+  `domain` VARCHAR(500) NOT NULL,
+  `ts` DATETIME NULL DEFAULT NULL,
+  `cutDomain` VARCHAR(500) NOT NULL,
+  `isUse` TINYINT(1) NOT NULL DEFAULT 0,
+  INDEX `fk_URLs_1_idx` (`content_id` ASC),
+  CONSTRAINT `fk_URLs_10`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `RKN`.`contents` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf32;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`IPs` (
+  `content_id` INT(11) NOT NULL,
+  `ip` VARCHAR(16) NOT NULL,
+  `ts` DATETIME NULL DEFAULT NULL,
+  `isUse` TINYINT(1) NOT NULL DEFAULT 0,
+  INDEX `fk_URLs_1_idx` (`content_id` ASC),
+  CONSTRAINT `fk_URLs_11`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `RKN`.`contents` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf32;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`IPSubnets` (
+  `content_id` INT(11) NOT NULL,
+  `sub` VARCHAR(20) NOT NULL,
+  `ts` DATETIME NULL DEFAULT NULL,
+  `isUse` TINYINT(1) NOT NULL DEFAULT 0,
+  INDEX `fk_URLs_1_idx` (`content_id` ASC),
+  CONSTRAINT `fk_URLs_12`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `RKN`.`contents` (`id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf32;
+
+CREATE TABLE IF NOT EXISTS `RKN`.`info` (
+  `updateTime` DATETIME NOT NULL,
+  `updateTimeUrgently` DATETIME NOT NULL,
+  `formatVersion` VARCHAR(5) NOT NULL)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+create user 'rkn_user'@'localhost';
+GRANT ALL PRIVILEGES ON RKN.* TO 'rkn_user'@'localhost' WITH GRANT OPTION;
+flush privileges;

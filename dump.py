@@ -37,9 +37,12 @@ class Dump:
 		return dict((k, v) for (k, v) in result)
 
 	"""Метод предназначен для получения результата обработки запроса - выгрузки из реестра"""
-	def __getResult(self, code): 
-		result = self.__client.service.getResult(code)
-		return dict((k, v) for (k, v) in result)
+	def __getResult(self, code):
+		try:
+			result = self.__client.service.getResult(code)
+			return dict((k, v) for (k, v) in result)
+		except:
+			return {'resultComment' : 'try again'} 
 
 	"""парсим конфиг файл"""
 	def __init__(self, conf):

@@ -13,7 +13,7 @@ class myConn:
 			con_text = conf_file.read()
 			self.__host = re.search(r'(?<=HOST=)\S+', con_text).group(0)
 			self.__user = re.search(r'(?<=USER=)\S+', con_text).group(0)
-			self.__pass = re.search(r'(?<=PASS=)\S+', con_text).group(0)
+#			self.__pass = re.search(r'(?<=PASS=)\S+', con_text).group(0)
 			self.__db = re.search(r'(?<=DB=)\S+', con_text).group(0)
 			conf_file.close()
 		except:
@@ -24,8 +24,10 @@ class myConn:
 	def connect(self):
 		try:
 			self.__dbc = mysql.connector.connect(
-				host=self.__host, user=self.__user,
-				password=self.__pass, database=self.__db
+				host=self.__host, 
+				user=self.__user, 
+#				password=self.__pass, 
+				database=self.__db
 			)
 		except:
 			raise SystemExit('Fail to connect!')

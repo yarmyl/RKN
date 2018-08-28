@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 
 from RKN import *
+import time
 
 def rewrite_all(R):
-	R.download()
-	R.clear_table()
-	R.insert_info(R.read_head())
-	R.open_dump()
-	R.insert_data(R.parser())
+	if R.download():
+#		R.clear_table()
+		R.insert_info(R.read_head())
+		R.open_dump()
+		R.insert_data(R.parser())
+		return 1
+	return 0
 
 def check(R, xml):
 	R.open_dump(xml)
@@ -16,17 +19,19 @@ def check(R, xml):
 	R.check_data()
 
 def check_update(R):
-	if int(R.check_date()) - int(R.check_last_update_date()) < 3 * 60 * 60:
+	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
 		return 0
 	else:
 		return 1
 
 def update_all(R):
-	if R.check_update():
-		R.download()
+#	if R.check_update():
+	if R.download():
 		R.insert_info(R.read_head())
 		R.open_dump()
 		R.update_data(R.delta(R.parser()))
+		return 1
+	return 0
 		
 def gen_bgp(R, file='out/bgp.list', head='bgp.head'):
 	bgp_list = open(file, 'w')
@@ -73,6 +78,32 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 	re_dom_list.close()
 #	return dom_list
 	
-#R = RKN()
-#rewrite_all(R)
-#del R
+R = RKN()
+while 1:
+	if not R.check_last_update_date():
+		print("Insert data from dump")
+		if rewrite_all(R):
+			print("Generate rules")
+			gen_domains(R)
+			gen_urls(R)
+			gen_black_net(R)
+			gen_bgp(R)
+			print("done!")
+		else:
+			print("try download again!")
+	else:
+		if check_update(R):
+			print("Update data from new dump")
+			if update_all(R):
+				print("Generate rules")
+				gen_domains(R)
+				gen_urls(R)
+				gen_black_net(R)
+				gen_bgp(R)
+				print("done!")
+			else:
+				print("try download again!")
+		else:
+			print("Update aren't ready yet.")
+	time.sleep(60)
+del R
