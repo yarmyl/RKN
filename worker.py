@@ -81,7 +81,7 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 R = RKN()
 while 1:
 	if not R.check_last_update_date():
-		print("Insert data from dump")
+		print("Insert data from dump...")
 		if rewrite_all(R):
 			print("Generate rules")
 			gen_domains(R)
@@ -92,8 +92,9 @@ while 1:
 		else:
 			print("try download again!")
 	else:
+		print("Check update...")
 		if check_update(R):
-			print("Update data from new dump")
+			print("Update data from new dump...")
 			if update_all(R):
 				print("Generate rules")
 				gen_domains(R)
