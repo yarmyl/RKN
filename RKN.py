@@ -280,7 +280,7 @@ class RKN:
 		try:
 			self.__Dump.download()
 			return 1
-		except
+		except:
 			return 0
 		
 	"""Перезаписываем информацию ореестре в БД"""
