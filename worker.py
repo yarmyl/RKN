@@ -3,6 +3,58 @@
 
 from RKN import *
 import time
+import argparse
+from threading import Thread
+
+class Daemon(Thread):
+	__STOP = 0
+	__CONF = 0
+	def add_conf(self, conf):
+		self.__CONF = conf
+	def __init__(self):
+		Thread.__init__(self)
+	def run(self):
+		R = RKN(self.__CONF) if self.__CONF else RKN()
+		while not self.__STOP:
+			if not R.check_last_update_date():	
+				print("Insert data from dump...")
+				if rewrite_all(R):
+					print("Generate rules")
+					gen_domains(R)
+					gen_urls(R)
+					gen_black_net(R)
+					gen_bgp(R)
+					print("done!")
+				else:
+					print("try download again!")
+			else:
+#				print("Check update...")
+				if check_update(R):
+					print("Update data from new dump...")
+					if update_all(R):
+						print("Generate rules")
+						gen_domains(R)
+						gen_urls(R)
+						gen_black_net(R)
+						gen_bgp(R)
+						print("done!")
+					else:
+						print("try download again!")
+				else:
+#					print("Update aren't ready yet.")
+					pass
+			time.sleep(60)
+		del R
+	def stop(self):
+		self.__STOP = 1
+
+def createParser ():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--start', action='store_true')
+	parser.add_argument('--conf', nargs='?')
+	parser.add_argument('--log', nargs='?')
+	parser.add_argument('--err', nargs='?')
+	return parser
 
 def rewrite_all(R):
 	if R.download():
@@ -77,34 +129,23 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 	dom_list.close()
 	re_dom_list.close()
 #	return dom_list
-	
-R = RKN()
-while 1:
-	if not R.check_last_update_date():
-		print("Insert data from dump...")
-		if rewrite_all(R):
-			print("Generate rules")
-			gen_domains(R)
-			gen_urls(R)
-			gen_black_net(R)
-			gen_bgp(R)
-			print("done!")
-		else:
-			print("try download again!")
-	else:
-		print("Check update...")
-		if check_update(R):
-			print("Update data from new dump...")
-			if update_all(R):
-				print("Generate rules")
-				gen_domains(R)
-				gen_urls(R)
-				gen_black_net(R)
-				gen_bgp(R)
-				print("done!")
-			else:
-				print("try download again!")
-		else:
-			print("Update aren't ready yet.")
+
+parser = createParser()
+namespace = parser.parse_args()
+
+if namespace.start:
+	d = Daemon()
+	if namespace.conf:
+		d.add_conf(namespace.conf)
+	d.start()
 	time.sleep(60)
-del R
+	d.stop()
+elif namespace.err:
+	R = RKN(namespace.conf) if namespace.conf else RKN()
+	if namespace.err == 'new':
+		while not R.download():
+			pass
+		check(R, 'dump.xml')
+	else:
+		check(R, namespace.err)
+	del R

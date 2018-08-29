@@ -70,7 +70,8 @@ class RKN:
 			for node in content:
 				if node.tag == "url":
 					size_url(node.text)
-					split_url(node.text)
+					if not is_dom(split_url(node.text)[2]):
+						print("Bad url: ", node.text)
 				if node.tag == "domain":
 					size_dom(node.text)
 					is_dom(node.text)
@@ -113,6 +114,8 @@ class RKN:
 							if res[2] in white_dom and res[1] == '80' and res[0] == 'http':
 								isUse = 1
 								size_urls +=1
+						else:
+							print("Bad url: ", node.text)
 						urls.append((content.get("id"), node.text, 
 								node.get("ts").split('+')[0] if node.get("ts") else node.get("ts"), 
 								res[2], res[0], res[1], isUse)
