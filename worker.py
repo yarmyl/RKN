@@ -157,10 +157,14 @@ if namespace.start:
 	if namespace.conf:
 		d.add_conf(namespace.conf)
 	d.start()
-	fifo = open('input.in', 'r')
-	while fifo.read() != 'stop\n':
-		pass
-	d.stop()
+	try:
+		fifo = open('input.in', 'r')
+		while fifo.read() != 'stop\n':
+			pass
+	except:
+		print('Fail to open fifo!')
+	finally:
+		d.stop()
 elif namespace.err:
 	R = RKN(namespace.conf) if namespace.conf else RKN()
 	if namespace.err == 'new':
