@@ -29,7 +29,7 @@ class Daemon(Thread):
 				else:
 					print("try download again!")
 			else:
-				print("Check update...")
+#				print("Check update...")
 				if check_update(R):
 					print("Update data from new dump...")
 					if update_all(R):
@@ -42,7 +42,7 @@ class Daemon(Thread):
 					else:
 						print("try download again!")
 				else:
-					print("Update aren't ready yet.")
+#					print("Update aren't ready yet.")
 					pass
 			time.sleep(10)
 		del R
