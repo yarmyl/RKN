@@ -6,7 +6,6 @@ import time
 import argparse
 from threading import Thread
 
-
 """Рабочий Демон"""
 class Daemon(Thread):
 	__STOP = 0
@@ -30,7 +29,7 @@ class Daemon(Thread):
 				else:
 					print("try download again!")
 			else:
-#				print("Check update...")
+				print("Check update...")
 				if check_update(R):
 					print("Update data from new dump...")
 					if update_all(R):
@@ -43,9 +42,9 @@ class Daemon(Thread):
 					else:
 						print("try download again!")
 				else:
-#					print("Update aren't ready yet.")
+					print("Update aren't ready yet.")
 					pass
-			time.sleep(60)
+			time.sleep(10)
 		del R
 	def stop(self):
 		self.__STOP = 1
@@ -158,7 +157,9 @@ if namespace.start:
 	if namespace.conf:
 		d.add_conf(namespace.conf)
 	d.start()
-	time.sleep(60)
+	fifo = open('input.in', 'r')
+	while fifo.read() != 'stop\n':
+		pass
 	d.stop()
 elif namespace.err:
 	R = RKN(namespace.conf) if namespace.conf else RKN()

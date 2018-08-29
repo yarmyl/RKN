@@ -14,6 +14,7 @@ touch iptables.head
 touch iptables.tail
 mkdir out/
 touch white_dom.list
+mkfifo input.in
 echo  "[CONN]
 HOST=localhost
 USER=rkn_user
