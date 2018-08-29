@@ -6,6 +6,8 @@ import time
 import argparse
 from threading import Thread
 
+
+"""Рабочий Демон"""
 class Daemon(Thread):
 	__STOP = 0
 	__CONF = 0
@@ -48,15 +50,18 @@ class Daemon(Thread):
 	def stop(self):
 		self.__STOP = 1
 
+"""Разбор аргументов"""
 def createParser ():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--start', action='store_true')
-	parser.add_argument('--conf', nargs='?')
-	parser.add_argument('--log', nargs='?')
-	parser.add_argument('--err', nargs='?')
+	parser.add_argument('--start', action='store_true') #запуск демона
+	parser.add_argument('--clear', action='store_true') #очистка БД
+	parser.add_argument('--conf', nargs='?') #файл конфиги
+	parser.add_argument('--log', nargs='?') #??
+	parser.add_argument('--err', nargs='?') #сводка по dump, если new, то скачивается свежий
 	return parser
 
-def rewrite_all(R):
+"""Запись в БД"""
+def write_all(R):
 	if R.download():
 #		R.clear_table()
 		R.insert_info(R.read_head())
@@ -65,17 +70,22 @@ def rewrite_all(R):
 		return 1
 	return 0
 
+"""Проверка данных в скачанном дампе"""
 def check(R, xml):
 	R.open_dump(xml)
 	R.counter()
 	R.check_data()
 
+"""Проверка обновлений 
+Если есть обновление и старше 3х часов предыдущего обновления,
+то True, иначе False"""
 def check_update(R):
 	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
 		return 0
 	else:
 		return 1
 
+"""Обновление БД по дельтам"""
 def update_all(R):
 #	if R.check_update():
 	if R.download():
@@ -84,7 +94,8 @@ def update_all(R):
 		R.update_data(R.delta(R.parser()))
 		return 1
 	return 0
-		
+
+"""Генератор Файла для BGP"""		
 def gen_bgp(R, file='out/bgp.list', head='bgp.head'):
 	bgp_list = open(file, 'w')
 	bgp_head = open(head, 'r')
@@ -94,7 +105,8 @@ def gen_bgp(R, file='out/bgp.list', head='bgp.head'):
 	bgp_list.close()
 	bgp_head.close()
 #	return bgp_list
-	
+
+"""Генератор файла для iptables"""	
 def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='iptables.tail'):
 	net_list = open(file, 'w')
 	net_head = open(head, 'r')
@@ -108,13 +120,16 @@ def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='ipta
 	net_list.close()
 #	return net_list
 
+"""Генератор файла с регулярными выражениями запрещенных ссылок"""
 def gen_urls(R, file='out/url.list'):
 	url_list = open(file, 'w')
 	for line in R.read_urls():
 		url_list.write('^' + re.sub('[.$?+"]', lambda x: '\\' + x.group(0), line) + '\n')
 	url_list.close()
 #	return R.read_urls()
-	
+
+"""Генератор файлов с регулярными выражениями запрещенных доменов
+и с запрещенными доменами"""	
 def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 	dom_list = open(file, 'w')
 	re_dom_list = open(re_file, 'w')
@@ -132,6 +147,11 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 
 parser = createParser()
 namespace = parser.parse_args()
+
+if namespace.clear:
+	R = RKN(namespace.conf) if namespace.conf else RKN()
+	R.clear_table()
+	del R
 
 if namespace.start:
 	d = Daemon()
