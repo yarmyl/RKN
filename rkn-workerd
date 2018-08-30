@@ -1,0 +1,98 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides: rkn-worker
+# Required-Start: $network
+# Required-Stop: $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: 
+### END INIT INFO
+
+name=rkn-worker
+discription='rkn-worker'
+script=worker.py
+pidfile=/run/worker.pid
+fifo=input.in
+dir=/home/mylovya/project/RKN/ #/opt/RKN/
+lock=/var/lock/$name
+
+status() {
+	if [ -f $pidfile ]
+	then
+		ps axf | grep `cat $pidfile` | grep -v 'grep'
+	fi
+}
+
+is_worked() {
+	if [ -f $lock ] 
+	then
+		if [[ `status` != "" ]]
+		then
+			echo 1
+		else
+			rm $lock
+		fi
+	fi
+}
+
+case "$1" in
+'start')
+        cd $dir
+	if [[ `is_worked` != "" ]] 
+	then
+		echo "IT's worked! Pid = `cat $pidfile`"
+		exit 1
+	fi
+	./$script --start &
+	echo $! > $pidfile
+	echo "Start done"
+        ;;
+'stop')
+	if [[ `is_worked` != "" ]]
+	then
+		echo stop > $dir$fifo
+		echo Try Stop
+		while [[ `status` != "" ]]
+		do
+			sleep 1
+		done
+		echo Done!
+	else
+		echo "Daemon isn't started!"
+	fi
+        ;;
+'restart')
+        /etc/init.d/$named stop
+        /etc/init.d/$named start
+        ;;
+'status')
+        if [[ `status` == "" ]]
+	then
+		echo "Daemon isn't started!"
+	else
+		echo "IT's worked! Pid = `cat $pidfile`"
+	fi
+        ;;
+'clear')
+	cd $dir
+	if [[ `is_worked` != "" ]] 
+	then
+		echo "NOT!!! IT's worked! Pid = `cat $pidfile`"
+		exit 1
+	fi
+	./$script --clear
+	;;
+'check-dump')
+	cd $dir; ./$script --err new
+	;;
+'full-restart')
+	/etc/init.d/$named stop
+	/etc/init.d/$named clear
+	/etc/init.d/$named start
+	echo "Start done"
+	;;
+*)
+        echo "Usage: $0 { start | stop | restart |  status | clear | check-dump | full-restart }"
+        ;;
+esac
+exit 0

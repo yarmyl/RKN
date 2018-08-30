@@ -5,6 +5,7 @@ from RKN import *
 import time
 import argparse
 from threading import Thread
+import os
 
 """Рабочий Демон"""
 class Daemon(Thread):
@@ -148,11 +149,13 @@ parser = createParser()
 namespace = parser.parse_args()
 
 if namespace.clear:
+	print('Try to clear DB')
 	R = RKN(namespace.conf) if namespace.conf else RKN()
 	R.clear_table()
 	del R
 
 if namespace.start:
+	os.symlink('/run/worker.pid', '/var/lock/rkn-worker')
 	d = Daemon()
 	if namespace.conf:
 		d.add_conf(namespace.conf)
@@ -160,11 +163,12 @@ if namespace.start:
 	try:
 		fifo = open('input.in', 'r')
 		while fifo.read() != 'stop\n':
-			pass
+			print('Stop Daemon...')
 	except:
 		print('Fail to open fifo!')
 	finally:
 		d.stop()
+		os.remove('/var/lock/rkn-worker')
 elif namespace.err:
 	R = RKN(namespace.conf) if namespace.conf else RKN()
 	if namespace.err == 'new':
