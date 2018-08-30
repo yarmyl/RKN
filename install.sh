@@ -27,3 +27,5 @@ XML_FILE_NAME=zapros.xml
 SIG_FILE_NAME=zapros.xml.sig
 RES=result
 VERS=2.3" > conn.conf
+cp rkn-workerd /etc/init.d/rkn-workerd
+update-rc.d rkn-workerd defaults

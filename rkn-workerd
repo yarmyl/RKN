@@ -13,7 +13,7 @@ discription='rkn-worker'
 script=worker.py
 pidfile=/run/worker.pid
 fifo=input.in
-dir=/home/mylovya/project/RKN/ #/opt/RKN/
+dir=/opt/RKN/
 lock=/var/lock/$name
 
 status() {
