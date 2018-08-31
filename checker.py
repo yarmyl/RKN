@@ -3,6 +3,9 @@
 
 from netaddr import *
 import re
+import logging
+
+logger = logging.getLogger("class.rkn.checker")
 
 """Локальные сети запрещенны"""
 bad_nets = [IPNetwork('127.0.0.0/24'), IPNetwork('10.0.0.0/8'),
@@ -23,10 +26,10 @@ def is_ip(ip):
 	if len(arr) == 4:
 		for a in arr:
 			if int(a) > 255 or int(a) < 0:
-				print("Bad ip: ", ip)
+				logger.warning("Bad ip: " + ip)
 				return 0
 	else:
-		print("Bad ip: ", ip)
+		logger.warning("Bad ip: " + ip)
 		return 0
 	return 1
 
@@ -34,7 +37,7 @@ def is_ip(ip):
 def is_true_net(net, ip=1):
 	try:
 		if net in bad_ips:
-			print("Bad ip/subnet: ", net)
+			logger.warning("Bad ip/subnet: " + net)
 			return 0
 		nets = list(bad_nets)
 		if ip:
@@ -42,11 +45,11 @@ def is_true_net(net, ip=1):
 		else:
 			nets.append(IPNetwork(net))
 		if len(cidr_merge(nets)) == 4:
-			print("Bad ip/subnet: ", net)
+			logger.warning("Bad ip/subnet: " + net)
 			return 0
 		return 1
 	except:
-		print("Bad ip/subnet: ", net)
+		logger.warning("Bad ip/subnet: " + net)
 		return 0
 		
 """Выполняем проверку на подсеть"""
@@ -54,20 +57,20 @@ def is_net(net):
 	arr = net.split('/')
 	if len(arr) == 2 and is_ip(arr[0]) and int(arr[1]) > 7 and int(arr[1]) < 33:
 		return 1
-	print("Bad subnet: ", net)
+	logger.warning("Bad subnet: " + net)
 	return 0
 	
 """Проверяем размер домена, не превышает ли 500 символов"""
 def size_dom(dom):
 	if len(list(dom)) > 500:
-		print("Too long domain: ", dom)
+		logger.warning("Too long domain: " + dom)
 		return 0
 	return 1
 
 """Выполняем провеку на домен"""
 def is_dom(dom):
 	if re.search("[^\w\-\.\*]", punycode_converter(dom)) and dom != "":
-		print("Bad domain: ", dom)
+		logger.warning("Bad domain: " + dom)
 		return 0
 	return 1
 
@@ -86,7 +89,7 @@ def cut_dom(dom):
 """Выполняем проверку на размер URL и домена"""
 def size_url(url):
 	if len(list(url)) > 2000:
-		print("Too long url: ", url)
+		logger.warning("Too long url: " + url)
 		return 0
 	try:
 		dom = re.match("([a-zA-Z0-9]+://)?(?P<dom>[^:/]+)[/:]?", url).group("dom")

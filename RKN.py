@@ -9,6 +9,7 @@ import dump
 from lxml.etree import ElementTree
 import datetime
 import multiprocessing
+import logging
 
 """Дочерний класс для проверки вхождения домена в домен"""
 class DOM_LIST(list):
@@ -21,7 +22,7 @@ class DOM_LIST(list):
 		return 1
 
 class RKN:
-
+	logger = logging.getLogger("class.rkn")
 	"""Пытаемся считать конфиг, получить экземпляр класса 
 	для считывания дампа и подключения к БД"""
 	def __init__(self, conn='conn.conf'):
@@ -56,13 +57,13 @@ class RKN:
 						m_dom = size
 				if node.tag == "ip": size_ip += 1
 				if node.tag == "ipSubnet": size_sub += 1
-		print("Content size = ", size_cont)
-		print("Max lit in url = ", m_url)
-		print("Max lit in domain = ", m_dom)
-		print("Count urls = ", size_url)
-		print("Count domains = ", size_dom)
-		print("Count ips = ", size_ip)
-		print("Count subnets = ", size_sub)
+		self.logger.info("Content size = ", size_cont)
+		self.logger.info("Max lit in url = ", m_url)
+		self.logger.info("Max lit in domain = ", m_dom)
+		self.logger.info("Count urls = ", size_url)
+		self.logger.info("Count domains = ", size_dom)
+		self.logger.info("Count ips = ", size_ip)
+		self.logger.info("Count subnets = ", size_sub)
 
 	"""Выполняем проверку данных в дампе"""
 	def check_data(self):
@@ -71,7 +72,7 @@ class RKN:
 				if node.tag == "url":
 					size_url(node.text)
 					if not is_dom(split_url(node.text)[2]):
-						print("Bad url: ", node.text)
+						self.logger.warning("Bad url: ", node.text)
 				if node.tag == "domain":
 					size_dom(node.text)
 					is_dom(node.text)
@@ -115,7 +116,7 @@ class RKN:
 								isUse = 1
 								size_urls +=1
 						else:
-							print("Bad url: ", node.text)
+							self.logger.warning("Bad url: ", node.text)
 						urls.append((content.get("id"), node.text, 
 								node.get("ts").split('+')[0] if node.get("ts") else node.get("ts"), 
 								res[2], res[0], res[1], isUse)
@@ -276,7 +277,7 @@ class RKN:
 			tree = etree.parse(xml_path)
 			self.__root = tree.getroot()
 		except:
-			raise SystemExit('Fail in init!')
+			raise SystemExit(print_log('Fail in init!'))
 	
 	"""скачиваем актуальный дамп"""
 	def download(self):

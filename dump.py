@@ -6,9 +6,11 @@ import base64
 import time
 import zipfile
 import re
+import logging
 import zipfile
 
 class Dump:
+	logger = logging.getLogger("class.dump")
 	"""Аналогичен getLastDumpDateEx, 
 	но  возвращает  только  один параметр lastDumpDate"""
 	def getLastDumpDate(self): 
@@ -56,7 +58,7 @@ class Dump:
 			self.__vers = re.search(r'(?<=VERS=)\S+', con_text).group(0)
 			conf_file.close()
 		except:
-			raise SystemExit('Fail to read config')
+			raise SystemExit(print_log('Fail to read config'))
 		self.__client = suds.client.Client(self.__url)
 	
 	"""скачиваем dump"""
@@ -64,28 +66,28 @@ class Dump:
 		request = self.__sendRequest(self.__xml, self.__sig, self.__vers)
 		if request['result']:
 			code = request['code']
-			print('Got code %s' % (code))
-			print('Trying to get result...')
-			print('sleep 60 sec')
+			self.logger.info('Got code %s' % (code))
+			self.logger.info('Trying to get result...')
+			self.logger.info('sleep 60 sec')
 			time.sleep(60)
 			while 1:
 				request = self.__getResult(code)
 				if request['result']:
-					print('Got it!')
+					self.logger.info('Got it!')
 					file = open(self.__res + '.zip', "wb")
 					file.write(base64.b64decode(request['registerZipArchive']))
 					file.close()
 					break
 				else:
 					if request['resultComment'] == 'запрос обрабатывается':
-						print('Not ready yet.')
-						print('sleep 60 sec')
+						self.logger.warning('Not ready yet.')
+						self.logger.info('sleep 60 sec')
 						time.sleep(60)
 					else:
-						print('Error: %s' % request['resultComment'])
+						self.logger.error('Error: %s' % request['resultComment'])
 						break
 		else:
-			print('Error: %s' % request['resultComment'])
+			self.logger.error('Error: %s' % request['resultComment'])
 		file = zipfile.ZipFile(self.__res + '.zip')
 		file.extract('dump.xml', '')
 		file.close()

@@ -3,12 +3,15 @@
 
 import mysql.connector
 import re
+import logging
 
 
 class myConn:
+	logger = logging.getLogger("class.mysqlconnect")
 	"""Парсим конфиг и инициализируем коннект к базе данных"""
 	def __init__(self, conf):
 		try:
+			self.logger.info("Try to parse conf file " + conf)
 			conf_file = open(conf, 'r')
 			con_text = conf_file.read()
 			self.__host = re.search(r'(?<=HOST=)\S+', con_text).group(0)
@@ -20,12 +23,15 @@ class myConn:
 			self.__db = re.search(r'(?<=DB=)\S+', con_text).group(0)
 			conf_file.close()
 		except:
-			raise SystemExit('Fail to read config')
+			self.logger.error('Fail to read config')
+			raise SystemExit()
+		self.logger.info("Success!")
 		self.connect()
 
 	"""пробуем законнкетиться"""
 	def connect(self):
 		try:
+			self.logger.info("Try connect DB")
 			self.__dbc = mysql.connector.connect(
 				host=self.__host, 
 				user=self.__user, 
@@ -33,7 +39,9 @@ class myConn:
 				database=self.__db
 			)
 		except:
-			raise SystemExit('Fail to connect!')
+			self.logger.error('Fail to connect!')
+			raise SystemExit()
+		self.logger.info("Success!")
 
 	def __del__(self):
 		self.__dbc.close()

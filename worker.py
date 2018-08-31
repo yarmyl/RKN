@@ -6,6 +6,9 @@ import time
 import argparse
 from threading import Thread
 import os
+import signal
+import logging
+import logging.config
 
 """Рабочий Демон"""
 class Daemon(Thread):
@@ -19,33 +22,34 @@ class Daemon(Thread):
 		R = RKN(self.__CONF) if self.__CONF else RKN()
 		while not self.__STOP:
 			if not R.check_last_update_date():	
-				print("Insert data from dump...")
+				logger.info("Insert data from dump...")
 				if rewrite_all(R):
-					print("Generate rules")
+					logger.info("Generate rules")
 					gen_domains(R)
 					gen_urls(R)
 					gen_black_net(R)
 					gen_bgp(R)
-					print("done!")
+					logger.info("done!")
 				else:
-					print("try download again!")
+					logger.warning("try download again!")
 			else:
 #				print("Check update...")
 				if check_update(R):
-					print("Update data from new dump...")
+					logger.info("Update data from new dump...")
 					if update_all(R):
-						print("Generate rules")
+						logger.info("Generate rules")
 						gen_domains(R)
 						gen_urls(R)
 						gen_black_net(R)
 						gen_bgp(R)
-						print("done!")
+						logger.info("done!")
 					else:
-						print("try download again!")
+						logger.warning("try download again!")
 				else:
 #					print("Update aren't ready yet.")
 					pass
 			time.sleep(10)
+		logger.info("Stop success!")
 		del R
 	def stop(self):
 		self.__STOP = 1
@@ -56,7 +60,7 @@ def createParser ():
 	parser.add_argument('--start', action='store_true') #запуск демона
 	parser.add_argument('--clear', action='store_true') #очистка БД
 	parser.add_argument('--conf', nargs='?') #файл конфиги
-	parser.add_argument('--log', nargs='?') #??
+	parser.add_argument('--log', nargs='?') #перенаправление вывода в log
 	parser.add_argument('--err', nargs='?') #сводка по dump, если new, то скачивается свежий
 	return parser
 
@@ -145,36 +149,50 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 	re_dom_list.close()
 #	return dom_list
 
-parser = createParser()
-namespace = parser.parse_args()
-
-if namespace.clear:
-	print('Try to clear DB')
-	R = RKN(namespace.conf) if namespace.conf else RKN()
-	R.clear_table()
-	del R
-
-if namespace.start:
-	os.symlink('/run/worker.pid', '/var/lock/rkn-worker')
-	d = Daemon()
-	if namespace.conf:
-		d.add_conf(namespace.conf)
-	d.start()
-	try:
-		fifo = open('input.in', 'r')
-		while fifo.read() != 'stop\n':
-			print('Stop Daemon...')
-	except:
-		print('Fail to open fifo!')
-	finally:
-		d.stop()
-		os.remove('/var/lock/rkn-worker')
-elif namespace.err:
-	R = RKN(namespace.conf) if namespace.conf else RKN()
-	if namespace.err == 'new':
-		while not R.download():
-			pass
-		check(R, 'dump.xml')
+def main():
+	parser = createParser()
+	namespace = parser.parse_args()
+	
+	if namespace.log:
+		logging.config.fileConfig(namespace.log)
 	else:
-		check(R, namespace.err)
-	del R
+		logging.basicConfig(level=logging.INFO)
+	logger = logging.getLogger('rkn-worker')
+	if namespace.clear:
+		logger.info('Try to clear DB')
+		R = RKN(namespace.conf) if namespace.conf else RKN()
+		R.clear_table()
+		logger.info('Clear Success!')
+		del R
+
+	if namespace.start:
+		os.symlink('/run/worker.pid', '/var/lock/rkn-worker')
+		d = Daemon()
+		if namespace.conf:
+			d.add_conf(namespace.conf)
+		logger.info("Start Daemon!")
+		d.start()
+		try:
+			fifo = open('input.in', 'r')
+			while fifo.read() != 'stop\n':
+				logger.warning('Wrong command')
+			logger.info('Stop Daemon...')
+		except:
+			logger.error('Fail to open fifo!')
+		finally:
+			d.stop()
+			os.remove('/var/lock/rkn-worker')
+			logger.info("Lock removed!")
+	elif namespace.err:
+		R = RKN(namespace.conf) if namespace.conf else RKN()
+		logger.info("Start to check ", namespace.err, " dump")
+		if namespace.err == 'new':
+			while not R.download():
+				pass
+			check(R, 'dump.xml')
+		else:
+			check(R, namespace.err)
+		del R
+
+if __name__ == "__main__":
+	main()

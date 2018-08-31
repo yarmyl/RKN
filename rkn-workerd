@@ -15,6 +15,7 @@ pidfile=/run/worker.pid
 fifo=input.in
 dir=/opt/RKN/
 lock=/var/lock/$name
+log=$dirlogger.conf
 
 status() {
 	if [ -f $pidfile ]
@@ -43,7 +44,7 @@ case "$1" in
 		echo "IT's worked! Pid = `cat $pidfile`"
 		exit 1
 	fi
-	./$script --start &
+	./$script --start --log $log &
 	echo $! > $pidfile
 	echo "Start done"
         ;;
@@ -80,10 +81,10 @@ case "$1" in
 		echo "NOT!!! IT's worked! Pid = `cat $pidfile`"
 		exit 1
 	fi
-	./$script --clear
+	./$script --clear --log $log
 	;;
 'check-dump')
-	cd $dir; ./$script --err new
+	cd $dir; ./$script --err new --log $log
 	;;
 'full-restart')
 	/etc/init.d/$named stop
