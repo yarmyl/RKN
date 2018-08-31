@@ -13,9 +13,9 @@ discription='rkn-worker'
 script=worker.py
 pidfile=/run/worker.pid
 fifo=input.in
-dir=/opt/RKN/
+dir=/opt/RKN
 lock=/var/lock/$name
-log=$dirlogger.conf
+log=$dir/logger.conf
 
 status() {
 	if [ -f $pidfile ]
@@ -51,7 +51,7 @@ case "$1" in
 'stop')
 	if [[ `is_worked` != "" ]]
 	then
-		echo stop > $dir$fifo
+		echo stop > $dir/$fifo
 		echo Try Stop
 		while [[ `status` != "" ]]
 		do
