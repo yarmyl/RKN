@@ -46,7 +46,9 @@ class Daemon(Thread):
 		del R
 	def stop(self):
 		self.__STOP = 1
-		
+
+"""сравнение файлов, если равны или не открываются, то 0
+иначе 1"""		
 def diff(a, b):
 	try:
 		file1 = open(a, 'r')
@@ -58,6 +60,8 @@ def diff(a, b):
 	else:
 		return 1
 
+"""Дельта для iptables, если изменения файла значительные,
+то переписываем правила полностью, иначе по дельте"""
 def delta_iptables(a, b):
 	try:
 		file1 = open(a, 'r')
@@ -87,6 +91,7 @@ def delta_iptables(a, b):
 	else:
 		return 0
 	
+"""Обработка сервисов"""
 def work_with_services(R, serv):
 	logger.info("Generate rules")
 	f = 0
@@ -197,8 +202,8 @@ def check(R, xml):
 Если есть обновление и старше 3х часов предыдущего обновления,
 то True, иначе False"""
 def check_update(R):
-#	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
-	if None:
+	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
+#	if None:
 		return 0
 	else:
 		return 1
@@ -263,6 +268,7 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 	re_dom_list.close()
 #	return dom_list
 
+"""парсер для настроек из conf файла"""
 def get_settings(config):
 	settings = dict()
 	for section in config.sections():
