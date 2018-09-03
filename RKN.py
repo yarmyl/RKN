@@ -225,7 +225,10 @@ class RKN:
 		doms = self.__DB.execute("""select distinct cutDomain  from domains where isUse = 1""")
 		dom_list = []
 		for dom in doms:
-			dom_list.append(dom[0].decode().split('.')[::-1])
+			try:
+				dom_list.append(dom[0].decode().split('.')[::-1])
+			except AttributeError:
+				dom_list.append(dom[0].split('.')[::-1])
 		dom_list = sorted(dom_list)
 		i = 0
 		while i < len(dom_list):
