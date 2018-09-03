@@ -44,7 +44,7 @@ case "$1" in
 		echo "IT's worked! Pid = `cat $pidfile`"
 		exit 1
 	fi
-	./$script --start --log $log &
+	./$script --start --log $log --iptables --bgp --dns --proxy &
 	echo $! > $pidfile
 	echo "Start done"
         ;;
@@ -84,7 +84,7 @@ case "$1" in
 	./$script --clear --log $log
 	;;
 'check-dump')
-	cd $dir; ./$script --err new --log $log
+	cd $dir; ./$script --err new
 	;;
 'full-restart')
 	/etc/init.d/$named stop

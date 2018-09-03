@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import mysql.connector
-import re
 import logging
 
 
@@ -11,17 +10,11 @@ class myConn:
 	"""Парсим конфиг и инициализируем коннект к базе данных"""
 	def __init__(self, conf):
 		try:
-			self.logger.info("Try to parse conf file " + conf)
-			conf_file = open(conf, 'r')
-			con_text = conf_file.read()
-			self.__host = re.search(r'(?<=HOST=)\S+', con_text).group(0)
-			self.__user = re.search(r'(?<=USER=)\S+', con_text).group(0)
-			if re.search(r'(?<=PASS=)\S*', con_text).group(0):
-				self.__pass = re.search(r'(?<=PASS=)\S*', con_text).group(0)
-			else:
-				self.__pass = 0
-			self.__db = re.search(r'(?<=DB=)\S+', con_text).group(0)
-			conf_file.close()
+			self.logger.info('Try read config')
+			self.__host = conf['host']
+			self.__user = conf['user']
+			self.__pass = conf.get('pass')
+			self.__db = conf['db']
 		except:
 			self.logger.error('Fail to read config')
 			raise SystemExit()
@@ -35,7 +28,7 @@ class myConn:
 			self.__dbc = mysql.connector.connect(
 				host=self.__host, 
 				user=self.__user, 
-				password=self.__pass if self.__pass else None, 
+				password=self.__pass, 
 				database=self.__db
 			)
 		except:

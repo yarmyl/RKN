@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from lxml import etree
-import re
 import mySQLConnect
 from checker import *
 import dump
@@ -25,9 +24,9 @@ class RKN:
 	logger = logging.getLogger("class.rkn")
 	"""Пытаемся считать конфиг, получить экземпляр класса 
 	для считывания дампа и подключения к БД"""
-	def __init__(self, conn='conn.conf'):
-		self.__DB = mySQLConnect.myConn(conn)
-		self.__Dump = dump.Dump(conn)
+	def __init__(self, conn):
+		self.__DB = mySQLConnect.myConn(conn['CONN'])
+		self.__Dump = dump.Dump(conn['DUMP'])
 
 	def __del__(self):
 		del self.__DB
@@ -57,13 +56,13 @@ class RKN:
 						m_dom = size
 				if node.tag == "ip": size_ip += 1
 				if node.tag == "ipSubnet": size_sub += 1
-		self.logger.info("Content size = ", size_cont)
-		self.logger.info("Max lit in url = ", m_url)
-		self.logger.info("Max lit in domain = ", m_dom)
-		self.logger.info("Count urls = ", size_url)
-		self.logger.info("Count domains = ", size_dom)
-		self.logger.info("Count ips = ", size_ip)
-		self.logger.info("Count subnets = ", size_sub)
+		self.logger.info("Content size = " + size_cont)
+		self.logger.info("Max lit in url = " + m_url)
+		self.logger.info("Max lit in domain = " + m_dom)
+		self.logger.info("Count urls = " + size_url)
+		self.logger.info("Count domains = " + size_dom)
+		self.logger.info("Count ips = " + size_ip)
+		self.logger.info("Count subnets = " + size_sub)
 
 	"""Выполняем проверку данных в дампе"""
 	def check_data(self):
@@ -116,7 +115,7 @@ class RKN:
 								isUse = 1
 								size_urls +=1
 						else:
-							self.logger.warning("Bad url: ", node.text)
+							self.logger.warning("Bad url: " + node.text)
 						urls.append((content.get("id"), node.text, 
 								node.get("ts").split('+')[0] if node.get("ts") else node.get("ts"), 
 								res[2], res[0], res[1], isUse)
@@ -175,6 +174,7 @@ class RKN:
 		
 	"""Всавляем данные в БД"""
 	def insert_data(self, data):
+		self.logger.info("Start Insert Data")
 		for content in data:
 			self.__DB.execute("""INSERT INTO contents (id, includeTime, urgencyType, entryType, hash, blockType, ts) 
 					VALUES(%s, %s, %s, %s, %s, %s, %s)""", content[0]
@@ -195,6 +195,7 @@ class RKN:
 					VALUES(%s, %s, %s, %s)""" ,content[5]
 			)
 		self.__DB.commit()
+		self.logger.info("Success!")
 	
 	"""Читаем из БД сети для БГП или запрещения на iptables"""
 	def read_net(self, bgp = 0):
@@ -224,7 +225,7 @@ class RKN:
 		doms = self.__DB.execute("""select distinct cutDomain  from domains where isUse = 1""")
 		dom_list = []
 		for dom in doms:
-			dom_list.append(dom[0].split('.')[::-1])
+			dom_list.append(dom[0].decode().split('.')[::-1])
 		dom_list = sorted(dom_list)
 		i = 0
 		while i < len(dom_list):

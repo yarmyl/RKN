@@ -5,7 +5,6 @@ import suds.client
 import base64
 import time
 import zipfile
-import re
 import logging
 import zipfile
 
@@ -49,16 +48,15 @@ class Dump:
 	"""парсим конфиг файл"""
 	def __init__(self, conf):
 		try:
-			conf_file = open(conf, 'r')
-			con_text = conf_file.read()
-			self.__url = re.search(r'(?<=API_URL=)\S+', con_text).group(0)
-			self.__xml = re.search(r'(?<=XML_FILE_NAME=)\S+', con_text).group(0)
-			self.__sig = re.search(r'(?<=SIG_FILE_NAME=)\S+', con_text).group(0)
-			self.__res = re.search(r'(?<=RES=)\S+', con_text).group(0)
-			self.__vers = re.search(r'(?<=VERS=)\S+', con_text).group(0)
-			conf_file.close()
+			self.logger.info('Try read config')
+			self.__url = conf['api_url']
+			self.__xml = conf['xml_file_name']
+			self.__sig = conf['sig_file_name']
+			self.__res = conf['res']
+			self.__vers = conf['vers']
 		except:
 			raise SystemExit(print_log('Fail to read config'))
+		self.logger.info("Success!")
 		self.__client = suds.client.Client(self.__url)
 	
 	"""скачиваем dump"""

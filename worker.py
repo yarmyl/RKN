@@ -6,30 +6,28 @@ import time
 import argparse
 from threading import Thread
 import os
-import signal
 import logging
 import logging.config
+import configparser
+import difflib
+import re
 
 """Рабочий Демон"""
 class Daemon(Thread):
-	__STOP = 0
-	__CONF = 0
 	def add_conf(self, conf):
 		self.__CONF = conf
+	def add_services(self, serv):
+		self.__services = serv
 	def __init__(self):
 		Thread.__init__(self)
+		self.__STOP = 0
 	def run(self):
-		R = RKN(self.__CONF) if self.__CONF else RKN()
+		R = RKN(self.__CONF)
 		while not self.__STOP:
 			if not R.check_last_update_date():	
 				logger.info("Insert data from dump...")
-				if rewrite_all(R):
-					logger.info("Generate rules")
-					gen_domains(R)
-					gen_urls(R)
-					gen_black_net(R)
-					gen_bgp(R)
-					logger.info("done!")
+				if write_all(R):
+					work_with_services(R, self.__services)
 				else:
 					logger.warning("try download again!")
 			else:
@@ -37,12 +35,7 @@ class Daemon(Thread):
 				if check_update(R):
 					logger.info("Update data from new dump...")
 					if update_all(R):
-						logger.info("Generate rules")
-						gen_domains(R)
-						gen_urls(R)
-						gen_black_net(R)
-						gen_bgp(R)
-						logger.info("done!")
+						work_with_services(R, self.__services)
 					else:
 						logger.warning("try download again!")
 				else:
@@ -53,6 +46,122 @@ class Daemon(Thread):
 		del R
 	def stop(self):
 		self.__STOP = 1
+		
+def diff(a, b):
+	try:
+		file1 = open(a, 'r')
+		file2 = open(b, 'r')
+	except:
+		return 0
+	if difflib.SequenceMatcher(None, file1.read(), file2.read()).real_quick_ratio() == 1:
+		return 0
+	else:
+		return 1
+
+def delta_iptables(a, b):
+	try:
+		file1 = open(a, 'r')
+		file2 = open(b, 'r')
+	except:
+		return 0
+	text1 = file1.read()
+	text2 = file2.read()
+	file1.close()
+	file2.close()
+	Diff = difflib.SequenceMatcher(None, text1, text2)
+	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= 0.9:
+		text1 = text1.splitlines()
+		text2 = text2.splitlines()
+		size = 0
+		res = []
+		for rul in difflib.ndiff(text1, text2):
+			if rul[:2] == '- ':
+				res.append("iptables -t nat -D " + str(size))
+			elif rul[:2] == '+ ':
+				r = re.match('\+ ([\S ]+) -A (\S+) ([\S ]+)', rul)
+				res.append(r.group(1) + ' -I ' + r.group(2) + ' ' + str(size) + ' ' + r.group(3))
+				size += 1
+			else:
+				size += 1
+		return res
+	else:
+		return 0
+	
+def work_with_services(R, serv):
+	logger.info("Generate rules")
+	f = 0
+	if serv.get('DNS') or serv.get('PROXY'):
+		if serv.get('DNS'):
+			dns = serv.get('DNS')
+			logger.info("Generate Domains")
+			try:
+				os.replace(dns.get('file'), dns.get('file')+'.old')
+			except:
+				os.system('touch ' + dns.get('file')+'.old')
+			if serv.get('PROXY'):
+				gen_domains(R, file=serv.get('DNS').get('file'), re_file=serv.get('PROXY').get('dom_file'))
+			else:
+				gen_domains(R, file=serv.get('DNS').get('file'))
+			logger.info("Try diff old and new DNS files")
+			if not diff(dns.get('file'), dns.get('file') + '.old'):
+				logger.info("is haven't diffirance")
+			else:
+				f = 1
+				for host in dns.get('host').split(','):
+					command = str(dns.get('cmd') + ' ' + dns.get('file') + ' '
+						+ dns.get('user') + '@' + host + ':' + dns.get('path'))
+					logger.info(command)
+					os.system(command)
+		else:
+			gen_domains(R, re_file=serv.get('PROXY').get('dom_file'))
+	if serv.get('PROXY'):
+		proxy = serv.get('PROXY')
+		logger.info("Generate URLs")
+		gen_urls(R, file=proxy.get('url_file'))
+		if not f:
+			logger.info("Try diff urls files")
+			if not diff(proxy.get('url_file'), proxy.get('url_conf')):
+				logger.info("urls is haven't diffirance")
+				logger.info("Try diff domains files")
+				if not diff(proxy.get('dom_file'), proxy.get('dom_conf')):
+					logger.info("domains is haven't diffirance")
+				else:
+					f = 1
+			else:
+				f = 1
+		if f:
+			os.replace(proxy.get('url_file'), proxy.get('url_conf'))
+			os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
+			logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
+			os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
+	if serv.get('IPTABLES'):
+		service = serv.get('IPTABLES')
+		os.replace(service.get('file'), service.get('file')+'.old')
+		logger.info("Generate IPTABLES")
+		gen_black_net(R, file=service.get('file'), head=service.get('head'), tail=service.get('tail'))
+		logger.info("Try diff black nets")
+		if not diff(service.get('file'), service.get('file') + '.old'):
+			logger.info("domains is haven't diffirance")
+		else:
+			d = delta_iptables(service.get('file') + '.old', service.get('file'))
+			if d:
+				for rul in d:
+					os.system(rul)
+			else:
+				os.system('bash ' + service.get('file'))
+			logger.info("Done!")
+	if serv.get('BGP'):
+		service = serv.get('BGP')
+		logger.info("Generate BGP")
+		gen_bgp(R, file=service.get('file'), head=service.get('head'))
+		logger.info("Try diff old and new BGP files")
+		if not diff(service.get('file'), service.get('conf_file')):
+			logger.info("is haven't diffirance")
+		else:
+			os.replace(service.get('file'), service.get('conf_file'))
+			logger.info("Restart bgp service")
+			os.system(service.get('service') + ' ' + service.get('work'))
+	logger.info("Generate done!")
 
 """Разбор аргументов"""
 def createParser ():
@@ -62,6 +171,10 @@ def createParser ():
 	parser.add_argument('--conf', nargs='?') #файл конфиги
 	parser.add_argument('--log', nargs='?') #перенаправление вывода в log
 	parser.add_argument('--err', nargs='?') #сводка по dump, если new, то скачивается свежий
+	parser.add_argument('--bgp', action='store_true') #работа с BGP
+	parser.add_argument('--iptables', action='store_true') #работа с iptables 
+	parser.add_argument('--dns', action='store_true') #работа с DNS
+	parser.add_argument('--proxy', action='store_true') #работа с proxy
 	return parser
 
 """Запись в БД"""
@@ -84,7 +197,8 @@ def check(R, xml):
 Если есть обновление и старше 3х часов предыдущего обновления,
 то True, иначе False"""
 def check_update(R):
-	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
+#	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
+	if None:
 		return 0
 	else:
 		return 1
@@ -149,27 +263,46 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
 	re_dom_list.close()
 #	return dom_list
 
+def get_settings(config):
+	settings = dict()
+	for section in config.sections():
+		value = dict()
+		for setting in config[section]:
+			value.update({setting: config.get(section, setting)})
+		settings.update({section: value})
+	return settings
+
 def main():
 	parser = createParser()
 	namespace = parser.parse_args()
-	
+	services = dict()
+	parser = configparser.ConfigParser()
+	parser.read(namespace.conf) if namespace.conf else parser.read('conn.conf')
+	settings = get_settings(parser)
 	if namespace.log:
 		logging.config.fileConfig(namespace.log)
 	else:
-		logging.basicConfig(level=logging.INFO)
+		logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 	logger = logging.getLogger('rkn-worker')
 	if namespace.clear:
 		logger.info('Try to clear DB')
-		R = RKN(namespace.conf) if namespace.conf else RKN()
+		R = RKN({'CONN': settings['CONN'], 'DUMP': settings['DUMP']})
 		R.clear_table()
 		logger.info('Clear Success!')
 		del R
-
+	if namespace.bgp:
+		services.update({'BGP': settings['BGP']})
+	if namespace.iptables:
+		services.update({'IPTABLES': settings['IPTABLES']})
+	if namespace.dns:
+		services.update({'DNS': settings['DNS']})
+	if namespace.proxy:
+		services.update({'PROXY': settings['PROXY']})
 	if namespace.start:
 		os.symlink('/run/worker.pid', '/var/lock/rkn-worker')
 		d = Daemon()
-		if namespace.conf:
-			d.add_conf(namespace.conf)
+		d.add_conf({'CONN': settings['CONN'], 'DUMP': settings['DUMP']})
+		d.add_services(services)
 		logger.info("Start Daemon!")
 		d.start()
 		try:
@@ -184,8 +317,8 @@ def main():
 			os.remove('/var/lock/rkn-worker')
 			logger.info("Lock removed!")
 	elif namespace.err:
-		R = RKN(namespace.conf) if namespace.conf else RKN()
-		logger.info("Start to check ", namespace.err, " dump")
+		R = RKN({'CONN': settings['CONN'], 'DUMP': settings['DUMP']})
+		logger.info("Start to check " + namespace.err + " dump")
 		if namespace.err == 'new':
 			while not R.download():
 				pass
