@@ -290,14 +290,17 @@ def main():
 		R.clear_table()
 		logger.info('Clear Success!')
 		del R
-	if namespace.bgp:
-		services.update({'BGP': settings['BGP']})
-	if namespace.iptables:
-		services.update({'IPTABLES': settings['IPTABLES']})
-	if namespace.dns:
-		services.update({'DNS': settings['DNS']})
-	if namespace.proxy:
-		services.update({'PROXY': settings['PROXY']})
+	try:
+		if namespace.bgp:
+			services.update({'BGP': settings['BGP']})
+		if namespace.iptables:
+			services.update({'IPTABLES': settings['IPTABLES']})
+		if namespace.dns:
+			services.update({'DNS': settings['DNS']})
+		if namespace.proxy:
+			services.update({'PROXY': settings['PROXY']})
+	except:
+		logger.info('fail in config file')
 	if namespace.start:
 		os.symlink('/run/worker.pid', '/var/lock/rkn-worker')
 		d = Daemon()
