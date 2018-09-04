@@ -135,8 +135,11 @@ def work_with_services(R, serv):
 			else:
 				f = 1
 		if f:
-			os.replace(proxy.get('url_file'), proxy.get('url_conf'))
-			os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
+			try:
+				os.replace(proxy.get('url_file'), proxy.get('url_conf'))
+				os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
+			except:
+				pass
 			logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
 			os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
 	if serv.get('IPTABLES'):
