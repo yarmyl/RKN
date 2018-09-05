@@ -206,8 +206,8 @@ def check(R, xml):
 Если есть обновление и старше 3х часов предыдущего обновления,
 то True, иначе False"""
 def check_update(R):
-#	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
-	if None:
+	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
+#	if None:
 		return 0
 	else:
 		return 1
