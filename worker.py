@@ -81,6 +81,8 @@ class Daemon(Thread):
 			self.logger.info("Generate URLs")
 			gen_urls(R, file=proxy.get('url_file'))
 			if not f:
+				if diff(proxy.get('white_conf'), 'white_dom.list'):
+					os.replace('white_dom.list', proxy.get('white_conf'))
 				self.logger.info("Try diff urls files")
 				if not diff(proxy.get('url_file'), proxy.get('url_conf')):
 					self.logger.info("urls is haven't diffirance")
@@ -101,7 +103,10 @@ class Daemon(Thread):
 				os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
 		if serv.get('IPTABLES'):
 			service = serv.get('IPTABLES')
-			os.replace(service.get('file'), service.get('file')+'.old')
+			try:
+				os.replace(service.get('file'), service.get('file')+'.old')
+			except:
+				os.system('touch ' + service.get('file') +'.old')
 			self.logger.info("Generate IPTABLES")
 			gen_black_net(R, file=service.get('file'), head=service.get('head'), tail=service.get('tail'))
 			self.logger.info("Try diff black nets")
