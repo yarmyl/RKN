@@ -239,7 +239,7 @@ def gen_bgp(R, file='out/bgp.list', head='bgp.head'):
 #	return bgp_list
 
 """Генератор файла для iptables"""	
-def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='iptables.tail', host):
+def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='iptables.tail', host='127.0.0.1:80'):
 	net_list = open(file, 'w')
 	net_head = open(head, 'r')
 	net_list.write(net_head.read())
