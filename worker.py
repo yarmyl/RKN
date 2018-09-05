@@ -14,6 +14,7 @@ import re
 
 """Рабочий Демон"""
 class Daemon(Thread):
+	logger = logging.getLogger("class.daemon")
 	def add_conf(self, conf):
 		self.__CONF = conf
 	def add_services(self, serv):
@@ -25,27 +26,107 @@ class Daemon(Thread):
 		R = RKN(self.__CONF)
 		while not self.__STOP:
 			if not R.check_last_update_date():	
-				logger.info("Insert data from dump...")
+				self.logger.info("Insert data from dump...")
 				if write_all(R):
-					work_with_services(R, self.__services)
+					self.work_with_services(R, self.__services)
 				else:
 					logger.warning("try download again!")
 			else:
 #				print("Check update...")
 				if check_update(R):
-					logger.info("Update data from new dump...")
+					self.logger.info("Update data from new dump...")
 					if update_all(R):
-						work_with_services(R, self.__services)
+						self.work_with_services(R, self.__services)
 					else:
-						logger.warning("try download again!")
+						self.logger.warning("try download again!")
 				else:
 #					print("Update aren't ready yet.")
 					pass
 			time.sleep(10)
-		logger.info("Stop success!")
+		self.logger.info("Stop success!")
 		del R
 	def stop(self):
 		self.__STOP = 1
+		
+	"""Обработка сервисов"""
+	def work_with_services(self, R, serv):
+		self.logger.info("Generate rules")
+		f = 0
+		if serv.get('DNS') or serv.get('PROXY'):
+			if serv.get('DNS'):
+				dns = serv.get('DNS')
+				self.logger.info("Generate Domains")
+				try:
+					os.replace(dns.get('file'), dns.get('file')+'.old')
+				except:
+					os.system('touch ' + dns.get('file')+'.old')
+				if serv.get('PROXY'):
+					gen_domains(R, file=serv.get('DNS').get('file'), re_file=serv.get('PROXY').get('dom_file'))
+				else:
+					gen_domains(R, file=serv.get('DNS').get('file'))
+				self.logger.info("Try diff old and new DNS files")
+				if not diff(dns.get('file'), dns.get('file') + '.old'):
+					self.logger.info("is haven't diffirance")
+				else:
+					f = 1
+					for host in dns.get('host').split(','):
+						command = str(dns.get('cmd') + ' ' + dns.get('file') + ' '
+							+ dns.get('user') + '@' + host + ':' + dns.get('path'))
+						self.logger.info(command)
+						os.system(command)
+			else:
+				gen_domains(R, re_file=serv.get('PROXY').get('dom_file'))
+		if serv.get('PROXY'):
+			proxy = serv.get('PROXY')
+			self.logger.info("Generate URLs")
+			gen_urls(R, file=proxy.get('url_file'))
+			if not f:
+				self.logger.info("Try diff urls files")
+				if not diff(proxy.get('url_file'), proxy.get('url_conf')):
+					self.logger.info("urls is haven't diffirance")
+					self.logger.info("Try diff domains files")
+					if not diff(proxy.get('dom_file'), proxy.get('dom_conf')):
+						self.logger.info("domains is haven't diffirance")
+					else:
+						f = 1
+				else:
+					f = 1
+			if f:
+				try:
+					os.replace(proxy.get('url_file'), proxy.get('url_conf'))
+					os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
+				except:
+					pass
+				self.logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
+				os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
+		if serv.get('IPTABLES'):
+			service = serv.get('IPTABLES')
+			os.replace(service.get('file'), service.get('file')+'.old')
+			self.logger.info("Generate IPTABLES")
+			gen_black_net(R, file=service.get('file'), head=service.get('head'), tail=service.get('tail'))
+			self.logger.info("Try diff black nets")
+			if not diff(service.get('file'), service.get('file') + '.old'):
+				self.logger.info("domains is haven't diffirance")
+			else:
+				d = delta_iptables(service.get('file') + '.old', service.get('file'))
+				if d:
+					for rul in d:
+						os.system(rul)
+				else:
+					os.system('bash ' + service.get('file'))
+				self.logger.info("Done!")
+		if serv.get('BGP'):
+			service = serv.get('BGP')
+			self.logger.info("Generate BGP")
+			gen_bgp(R, file=service.get('file'), head=service.get('head'))
+			self.logger.info("Try diff old and new BGP files")
+			if not diff(service.get('file'), service.get('conf_file')):
+				self.logger.info("is haven't diffirance")
+			else:
+				os.replace(service.get('file'), service.get('conf_file'))
+				self.logger.info("Restart bgp service")
+				os.system(service.get('service') + ' ' + service.get('work'))
+		self.logger.info("Generate done!")
 
 """сравнение файлов, если равны или не открываются, то 0
 иначе 1"""		
@@ -90,86 +171,6 @@ def delta_iptables(a, b):
 		return res
 	else:
 		return 0
-	
-"""Обработка сервисов"""
-def work_with_services(R, serv):
-	logger.info("Generate rules")
-	f = 0
-	if serv.get('DNS') or serv.get('PROXY'):
-		if serv.get('DNS'):
-			dns = serv.get('DNS')
-			logger.info("Generate Domains")
-			try:
-				os.replace(dns.get('file'), dns.get('file')+'.old')
-			except:
-				os.system('touch ' + dns.get('file')+'.old')
-			if serv.get('PROXY'):
-				gen_domains(R, file=serv.get('DNS').get('file'), re_file=serv.get('PROXY').get('dom_file'))
-			else:
-				gen_domains(R, file=serv.get('DNS').get('file'))
-			logger.info("Try diff old and new DNS files")
-			if not diff(dns.get('file'), dns.get('file') + '.old'):
-				logger.info("is haven't diffirance")
-			else:
-				f = 1
-				for host in dns.get('host').split(','):
-					command = str(dns.get('cmd') + ' ' + dns.get('file') + ' '
-						+ dns.get('user') + '@' + host + ':' + dns.get('path'))
-					logger.info(command)
-					os.system(command)
-		else:
-			gen_domains(R, re_file=serv.get('PROXY').get('dom_file'))
-	if serv.get('PROXY'):
-		proxy = serv.get('PROXY')
-		logger.info("Generate URLs")
-		gen_urls(R, file=proxy.get('url_file'))
-		if not f:
-			logger.info("Try diff urls files")
-			if not diff(proxy.get('url_file'), proxy.get('url_conf')):
-				logger.info("urls is haven't diffirance")
-				logger.info("Try diff domains files")
-				if not diff(proxy.get('dom_file'), proxy.get('dom_conf')):
-					logger.info("domains is haven't diffirance")
-				else:
-					f = 1
-			else:
-				f = 1
-		if f:
-			try:
-				os.replace(proxy.get('url_file'), proxy.get('url_conf'))
-				os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
-			except:
-				pass
-			logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
-			os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
-	if serv.get('IPTABLES'):
-		service = serv.get('IPTABLES')
-		os.replace(service.get('file'), service.get('file')+'.old')
-		logger.info("Generate IPTABLES")
-		gen_black_net(R, file=service.get('file'), head=service.get('head'), tail=service.get('tail'))
-		logger.info("Try diff black nets")
-		if not diff(service.get('file'), service.get('file') + '.old'):
-			logger.info("domains is haven't diffirance")
-		else:
-			d = delta_iptables(service.get('file') + '.old', service.get('file'))
-			if d:
-				for rul in d:
-					os.system(rul)
-			else:
-				os.system('bash ' + service.get('file'))
-			logger.info("Done!")
-	if serv.get('BGP'):
-		service = serv.get('BGP')
-		logger.info("Generate BGP")
-		gen_bgp(R, file=service.get('file'), head=service.get('head'))
-		logger.info("Try diff old and new BGP files")
-		if not diff(service.get('file'), service.get('conf_file')):
-			logger.info("is haven't diffirance")
-		else:
-			os.replace(service.get('file'), service.get('conf_file'))
-			logger.info("Restart bgp service")
-			os.system(service.get('service') + ' ' + service.get('work'))
-	logger.info("Generate done!")
 
 """Разбор аргументов"""
 def createParser ():
@@ -205,8 +206,8 @@ def check(R, xml):
 Если есть обновление и старше 3х часов предыдущего обновления,
 то True, иначе False"""
 def check_update(R):
-	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
-#	if None:
+#	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
+	if None:
 		return 0
 	else:
 		return 1
