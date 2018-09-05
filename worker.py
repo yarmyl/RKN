@@ -108,7 +108,7 @@ class Daemon(Thread):
 			except:
 				os.system('touch ' + service.get('file') +'.old')
 			self.logger.info("Generate IPTABLES")
-			gen_black_net(R, file=service.get('file'), head=service.get('head'), tail=service.get('tail'))
+			gen_black_net(R, file=service.get('file'), head=service.get('head'), tail=service.get('tail'), host=service.get('host'))
 			self.logger.info("Try diff black nets")
 			if not diff(service.get('file'), service.get('file') + '.old'):
 				self.logger.info("domains is haven't diffirance")
@@ -239,12 +239,12 @@ def gen_bgp(R, file='out/bgp.list', head='bgp.head'):
 #	return bgp_list
 
 """Генератор файла для iptables"""	
-def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='iptables.tail'):
+def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='iptables.tail', host):
 	net_list = open(file, 'w')
 	net_head = open(head, 'r')
 	net_list.write(net_head.read())
 	for line in R.read_net():
-		net_list.write('iptables -t nat -A PREROUTING -p tcp -d ' + str(line) + ' -j DNAT --to 10.0.0.25:80\n')
+		net_list.write('iptables -t nat -A PREROUTING -p tcp -d '+str(line)+' -j DNAT --to '+host+'\n')
 	net_tail = open(tail, 'r')
 	net_list.write(net_tail.read())
 	net_head.close()
