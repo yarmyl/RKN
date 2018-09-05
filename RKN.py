@@ -56,13 +56,13 @@ class RKN:
 						m_dom = size
 				if node.tag == "ip": size_ip += 1
 				if node.tag == "ipSubnet": size_sub += 1
-		self.logger.info("Content size = " + size_cont)
-		self.logger.info("Max lit in url = " + m_url)
-		self.logger.info("Max lit in domain = " + m_dom)
-		self.logger.info("Count urls = " + size_url)
-		self.logger.info("Count domains = " + size_dom)
-		self.logger.info("Count ips = " + size_ip)
-		self.logger.info("Count subnets = " + size_sub)
+		self.logger.info("Content size = " + str(size_cont))
+		self.logger.info("Max lit in url = " + str(m_url))
+		self.logger.info("Max lit in domain = " + str(m_dom))
+		self.logger.info("Count urls = " + str(size_url))
+		self.logger.info("Count domains = " + str(size_dom))
+		self.logger.info("Count ips = " + str(size_ip))
+		self.logger.info("Count subnets = " + str(size_sub))
 
 	"""Выполняем проверку данных в дампе"""
 	def check_data(self):
@@ -71,7 +71,7 @@ class RKN:
 				if node.tag == "url":
 					size_url(node.text)
 					if not is_dom(split_url(node.text)[2]):
-						self.logger.warning("Bad url: ", node.text)
+						self.logger.warning("Bad url: " + node.text)
 				if node.tag == "domain":
 					size_dom(node.text)
 					is_dom(node.text)
