@@ -12,7 +12,6 @@ name=rkn-worker
 discription='rkn-worker'
 script=worker.py
 pidfile=/run/worker.pid
-fifo=input.in
 dir=/opt/RKN
 lock=/var/lock/$name
 log=$dir/logger.conf
@@ -51,7 +50,7 @@ case "$1" in
 'stop')
 	if [[ `is_worked` != "" ]]
 	then
-		echo stop > $dir/$fifo
+		kill -10 `cat $pidfile`
 		echo Try Stop
 		while [[ `status` != "" ]]
 		do
@@ -63,8 +62,8 @@ case "$1" in
 	fi
         ;;
 'restart')
-        /etc/init.d/$named stop
-        /etc/init.d/$named start
+        $0 stop
+        $0 start
         ;;
 'status')
         if [[ `status` == "" ]]
@@ -87,9 +86,9 @@ case "$1" in
 	cd $dir; ./$script --err new
 	;;
 'full-restart')
-	/etc/init.d/$named stop
-	/etc/init.d/$named clear
-	/etc/init.d/$named start
+	$0 stop
+	$0 clear
+	$0 start
 	echo "Start done"
 	;;
 *)

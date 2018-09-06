@@ -11,6 +11,7 @@ import logging.config
 import configparser
 import difflib
 import re
+import signal
 
 """Рабочий Демон"""
 class Daemon(Thread):
@@ -22,6 +23,7 @@ class Daemon(Thread):
 	def __init__(self):
 		Thread.__init__(self)
 		self.__STOP = 0
+		self.__services = 0
 	def run(self):
 		R = RKN(self.__CONF)
 		while not self.__STOP:
@@ -36,7 +38,8 @@ class Daemon(Thread):
 				if check_update(R):
 					self.logger.info("Update data from new dump...")
 					if update_all(R):
-						self.work_with_services(R, self.__services)
+						if self.__services:
+							self.work_with_services(R, self.__services)
 					else:
 						self.logger.warning("try download again!")
 				else:
@@ -45,8 +48,9 @@ class Daemon(Thread):
 			time.sleep(10)
 		self.logger.info("Stop success!")
 		del R
-	def stop(self):
+	def stop(self, signal, frame):
 		self.__STOP = 1
+		self.logger.info('Stop Daemon...')
 		
 	"""Обработка сервисов"""
 	def work_with_services(self, R, serv):
@@ -173,7 +177,7 @@ def delta_bgp(a, b, c='0.5'):
 	file1.close()
 	file2.close()
 	Diff = difflib.SequenceMatcher(None, text1, text2)
-	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= c:
+	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= float(c):
 		text1 = text1.splitlines()
 		text2 = text2.splitlines()
 		res = []
@@ -199,7 +203,7 @@ def delta_iptables(a, b, с='0.8'):
 	file1.close()
 	file2.close()
 	Diff = difflib.SequenceMatcher(None, text1, text2)
-	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= c:
+	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= float(c):
 		text1 = text1.splitlines()
 		text2 = text2.splitlines()
 		size = 1
@@ -363,17 +367,10 @@ def main():
 		d.add_services(services)
 		logger.info("Start Daemon!")
 		d.start()
-		try:
-			fifo = open('input.in', 'r')
-			while fifo.read() != 'stop\n':
-				logger.warning('Wrong command')
-			logger.info('Stop Daemon...')
-		except:
-			logger.error('Fail to open fifo!')
-		finally:
-			d.stop()
-			os.remove('/var/lock/rkn-worker')
-			logger.info("Lock removed!")
+		signal.signal(signal.SIGUSR1, d.stop)
+		d.join()
+		os.remove('/var/lock/rkn-worker')
+		logger.info("Lock removed!")
 	elif namespace.err:
 		R = RKN({'CONN': settings['CONN'], 'DUMP': settings['DUMP']})
 		logger.info("Start to check " + namespace.err + " dump")
