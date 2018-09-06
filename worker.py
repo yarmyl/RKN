@@ -113,7 +113,10 @@ class Daemon(Thread):
 			if not diff(service.get('file'), service.get('file') + '.old'):
 				self.logger.info("domains is haven't diffirance")
 			else:
-				d = delta_iptables(service.get('file') + '.old', service.get('file'))
+				if service.get('weight'):
+					d = delta_iptables(service.get('file') + '.old', service.get('file'), service.get('weight'))
+				else:
+					d = delta_iptables(service.get('file') + '.old', service.get('file'))
 				if d:
 					self.logger.info("Edit iptables rules...")
 					for rul in d:
@@ -130,12 +133,15 @@ class Daemon(Thread):
 			if not diff(service.get('file'), service.get('conf_file')):
 				self.logger.info("is haven't diffirance")
 			else:
-				d = delta_bgp(service.get('conf_file'), service.get('file'))
+				if service.get('weight'):
+					d = delta_bgp(service.get('conf_file'), service.get('file'), service.get('weight'))
+				else:
+					d = delta_bgp(service.get('conf_file'), service.get('file'))
 				os.replace(service.get('file'), service.get('conf_file'))
 				if d:
 					self.logger.info("Edit bgp networks...")
 					for rul in d:
-						os.system(service.get('service') + ' ' + rul)
+						os.system(service.get('edit') + ' ' + rul)
 				else:
 					self.logger.info("Restart bgp service")
 					os.system(service.get('service') + ' ' + service.get('work'))
@@ -156,7 +162,7 @@ def diff(a, b):
 		
 """Дельта для маршрутов bgp, если изменения файла значительные,
 то переписываем правила полностью, иначе по дельте"""
-def delta_bgp(a, b):
+def delta_bgp(a, b, c='0.5'):
 	try:
 		file1 = open(a, 'r')
 		file2 = open(b, 'r')
@@ -167,7 +173,7 @@ def delta_bgp(a, b):
 	file1.close()
 	file2.close()
 	Diff = difflib.SequenceMatcher(None, text1, text2)
-	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= 0.5:
+	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= c:
 		text1 = text1.splitlines()
 		text2 = text2.splitlines()
 		res = []
@@ -182,7 +188,7 @@ def delta_bgp(a, b):
 
 """Дельта для iptables, если изменения файла значительные,
 то переписываем правила полностью, иначе по дельте"""
-def delta_iptables(a, b):
+def delta_iptables(a, b, с='0.8'):
 	try:
 		file1 = open(a, 'r')
 		file2 = open(b, 'r')
@@ -193,7 +199,7 @@ def delta_iptables(a, b):
 	file1.close()
 	file2.close()
 	Diff = difflib.SequenceMatcher(None, text1, text2)
-	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= 0.9:
+	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= c:
 		text1 = text1.splitlines()
 		text2 = text2.splitlines()
 		size = 1
