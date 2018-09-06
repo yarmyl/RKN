@@ -166,7 +166,7 @@ def delta_iptables(a, b):
 		res = []
 		for rul in difflib.ndiff(text1, text2):
 			if rul[:2] == '- ':
-				res.append("iptables -t nat -D PREROUTING" + str(size))
+				res.append("iptables -t nat -D PREROUTING " + str(size))
 			elif rul[:2] == '+ ':
 				r = re.match('\+ ([\S ]+) -A (\S+) ([\S ]+)', rul)
 				res.append(r.group(1) + ' -I ' + r.group(2) + ' ' + str(size) + ' ' + r.group(3))
