@@ -115,9 +115,11 @@ class Daemon(Thread):
 			else:
 				d = delta_iptables(service.get('file') + '.old', service.get('file'))
 				if d:
+					self.logger.info("Edit iptables rules...")
 					for rul in d:
 						os.system(rul)
 				else:
+					self.logger.info("Restart iptables rules")
 					os.system('bash ' + service.get('file'))
 				self.logger.info("Done!")
 		if serv.get('BGP'):
@@ -128,9 +130,15 @@ class Daemon(Thread):
 			if not diff(service.get('file'), service.get('conf_file')):
 				self.logger.info("is haven't diffirance")
 			else:
+				d = delta_bgp(service.get('conf_file'), service.get('file'))
 				os.replace(service.get('file'), service.get('conf_file'))
-				self.logger.info("Restart bgp service")
-				os.system(service.get('service') + ' ' + service.get('work'))
+				if d:
+					self.logger.info("Edit bgp networks...")
+					for rul in d:
+						os.system(service.get('service') + ' ' + rul)
+				else:
+					self.logger.info("Restart bgp service")
+					os.system(service.get('service') + ' ' + service.get('work'))
 		self.logger.info("Generate done!")
 
 """сравнение файлов, если равны или не открываются, то 0
@@ -145,6 +153,32 @@ def diff(a, b):
 		return 0
 	else:
 		return 1
+		
+"""Дельта для маршрутов bgp, если изменения файла значительные,
+то переписываем правила полностью, иначе по дельте"""
+def delta_bgp(a, b):
+	try:
+		file1 = open(a, 'r')
+		file2 = open(b, 'r')
+	except:
+		return 0
+	text1 = file1.read()
+	text2 = file2.read()
+	file1.close()
+	file2.close()
+	Diff = difflib.SequenceMatcher(None, text1, text2)
+	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= 0.5:
+		text1 = text1.splitlines()
+		text2 = text2.splitlines()
+		res = []
+		for rul in difflib.ndiff(text1, text2):
+			if rul[:2] == '- ':
+				res.append('"no ' + rul[2:] + '"')
+			elif rul[:2] == '+ ':
+				res.append(rul[2:])
+			return res
+	else:
+		return 0
 
 """Дельта для iptables, если изменения файла значительные,
 то переписываем правила полностью, иначе по дельте"""
