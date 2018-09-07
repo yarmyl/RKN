@@ -192,7 +192,7 @@ def delta_bgp(a, b, c='0.5'):
 
 """Дельта для iptables, если изменения файла значительные,
 то переписываем правила полностью, иначе по дельте"""
-def delta_iptables(a, b, с='0.8'):
+def delta_iptables(a, b, c='0.8'):
 	try:
 		file1 = open(a, 'r')
 		file2 = open(b, 'r')
