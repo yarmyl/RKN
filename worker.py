@@ -206,15 +206,18 @@ def delta_iptables(a, b, c='0.8'):
 	if Diff.real_quick_ratio() < 1 and Diff.real_quick_ratio() >= float(c):
 		text1 = text1.splitlines()
 		text2 = text2.splitlines()
-		size = 1
+		size = -1
 		res = []
 		for rul in difflib.ndiff(text1, text2):
+#			res.append(rul)
 			if rul[:2] == '- ':
 				res.append("iptables -t nat -D PREROUTING " + str(size))
 			elif rul[:2] == '+ ':
 				r = re.match('\+ ([\S ]+) -A (\S+) ([\S ]+)', rul)
 				res.append(r.group(1) + ' -I ' + r.group(2) + ' ' + str(size) + ' ' + r.group(3))
 				size += 1
+			elif rul[:2] == '? ':
+				pass
 			else:
 				size += 1
 		return res
