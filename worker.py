@@ -186,7 +186,7 @@ def delta_bgp(a, b, c='0.5'):
 				res.append('"no ' + rul[2:] + '"')
 			elif rul[:2] == '+ ':
 				res.append(rul[2:])
-			return res
+		return res
 	else:
 		return 0
 
