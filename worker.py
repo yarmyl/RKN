@@ -85,8 +85,6 @@ class Daemon(Thread):
 			self.logger.info("Generate URLs")
 			gen_urls(R, file=proxy.get('url_file'))
 			if not f:
-				if diff(proxy.get('white_conf'), 'white_dom.list'):
-					os.replace('white_dom.list', proxy.get('white_conf'))
 				self.logger.info("Try diff urls files")
 				if not diff(proxy.get('url_file'), proxy.get('url_conf')):
 					self.logger.info("urls is haven't diffirance")
@@ -103,6 +101,7 @@ class Daemon(Thread):
 					os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
 				except:
 					pass
+				gen_re_white(proxy.get('white_conf'), 'white_dom.list')
 				self.logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
 				os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
 		if serv.get('IPTABLES'):
@@ -163,6 +162,17 @@ def diff(a, b):
 		return 0
 	else:
 		return 1
+		
+def gen_re_white(conf, file):
+	try:
+		file1 = open(conf, 'w')
+		file2 = open(file, 'r')
+	except:
+		return 0
+	for line in file2:
+		line = re.sub('\.', '\.', line[:-1])
+		line = '^([^\/]*\.)?' + line[:-1] + '$\n'
+		file2.write(line)
 		
 """Дельта для маршрутов bgp, если изменения файла значительные,
 то переписываем правила полностью, иначе по дельте"""
