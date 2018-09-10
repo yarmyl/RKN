@@ -174,7 +174,7 @@ def gen_re_white(conf, file):
 		line = '^([^\/]*\.)?' + line[:-1] + '$\n'
 		file1.write(line)
 	file1.close()
-	file2.colse()
+	file2.close()
 		
 """Дельта для маршрутов bgp, если изменения файла значительные,
 то переписываем правила полностью, иначе по дельте"""
