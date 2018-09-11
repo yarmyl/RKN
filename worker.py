@@ -163,6 +163,7 @@ def diff(a, b):
 	else:
 		return 1
 		
+"""генерим регулярные выражения для белых списков"""
 def gen_re_white(conf, file):
 	try:
 		file1 = open(conf, 'w')
@@ -171,7 +172,7 @@ def gen_re_white(conf, file):
 		return 0
 	for line in file2:
 		line = re.sub('\.', '\.', line[:-1])
-		line = '^([^\/]*\.)?' + line[:-1] + '$\n'
+		line = '^([^\/]*\.)?' + line + '$\n'
 		file1.write(line)
 	file1.close()
 	file2.close()
