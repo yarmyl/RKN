@@ -11,3 +11,4 @@ conn.conf
 white_dom.list
 iptables.tail
 iptables.head
+*#
