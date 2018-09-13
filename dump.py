@@ -54,7 +54,7 @@ class Dump:
 			self.__sig = conf['sig_file_name']
 			self.__res = conf['res']
 			self.__vers = conf['vers']
-			self.__count = conf['count_try']
+			self.__count =int( conf['count_try'])
 		except:
 			raise SystemExit(print_log('Fail to read config'))
 		self.logger.info("Success!")
