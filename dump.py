@@ -54,6 +54,7 @@ class Dump:
 			self.__sig = conf['sig_file_name']
 			self.__res = conf['res']
 			self.__vers = conf['vers']
+			self.__count = conf['count_try']
 		except:
 			raise SystemExit(print_log('Fail to read config'))
 		self.logger.info("Success!")
@@ -64,11 +65,13 @@ class Dump:
 		request = self.__sendRequest(self.__xml, self.__sig, self.__vers)
 		if request['result']:
 			code = request['code']
-			self.logger.info('Got code %s' % (code))
+			self.logger.info('Got code ' + (code))
 			self.logger.info('Trying to get result...')
 			self.logger.info('sleep 60 sec')
 			time.sleep(60)
-			while 1:
+			i = 0
+			while i < self.__count:
+				i += 1
 				request = self.__getResult(code)
 				if request['result']:
 					self.logger.info('Got it!')
@@ -82,10 +85,15 @@ class Dump:
 						self.logger.info('sleep 60 sec')
 						time.sleep(60)
 					else:
-						self.logger.error('Error: %s' % request['resultComment'])
-						break
+						self.logger.error('Error: ' + request['resultComment'])
+						return 0
+			else:
+				self.logger.error('Error: ' + 'so slow...')
+				return 0
 		else:
-			self.logger.error('Error: %s' % request['resultComment'])
+			self.logger.error('Error: ' + request['resultComment'])
+			return 0
 		file = zipfile.ZipFile(self.__res + '.zip')
 		file.extract('dump.xml', '')
 		file.close()
+		return 1

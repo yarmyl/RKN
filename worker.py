@@ -16,8 +16,16 @@ import signal
 """Рабочий Демон"""
 class Daemon(Thread):
 	logger = logging.getLogger("class.daemon")
-	def add_conf(self, conf):
+	def add_conf(self, conf, daemon):
 		self.__CONF = conf
+		if daemon:
+			self.__timeout = int(daemon['timeout'])
+			self.__count = int(daemon['count_try'])
+			self.__utimeout = int(daemon['update_timeout'])
+		else:
+			self.__timeout = 10
+			self.__count = 5
+			self.__utimeout = 3
 	def add_services(self, serv):
 		self.__services = serv
 	def __init__(self):
@@ -26,27 +34,35 @@ class Daemon(Thread):
 		self.__services = 0
 	def run(self):
 		R = RKN(self.__CONF)
-		while not self.__STOP:
+		i = 0
+		while (not self.__STOP) and (i < self.__count):
 			if not R.check_last_update_date():	
 				self.logger.info("Insert data from dump...")
 				if write_all(R):
 					self.work_with_services(R, self.__services)
+					i = 0
 				else:
 					logger.warning("try download again!")
+					i += 1
 			else:
 #				print("Check update...")
-				if check_update(R):
+				if check_update(R, self.__utimeout):
 					self.logger.info("Update data from new dump...")
 					if update_all(R):
 						if self.__services:
 							self.work_with_services(R, self.__services)
+							i = 0
 					else:
 						self.logger.warning("try download again!")
+						i += 1
 				else:
 #					print("Update aren't ready yet.")
 					pass
-			time.sleep(10)
-		self.logger.info("Stop success!")
+			time.sleep(self.__timeout)
+		if self.__STOP:
+			self.logger.info("Stop success!")
+		else:
+			self.logger.error("Fail to download, stop service...")
 		del R
 	def stop(self, signal, frame):
 		self.__STOP = 1
@@ -270,8 +286,8 @@ def check(R, xml):
 """Проверка обновлений 
 Если есть обновление и старше 3х часов предыдущего обновления,
 то True, иначе False"""
-def check_update(R):
-	if int(R.check_date()) - int(R.check_last_update_date()) < 8 * 60 * 60:
+def check_update(R, u):
+	if int(R.check_date()) - int(R.check_last_update_date()) < (5 + u) * 60 * 60:
 #	if None:
 		return 0
 	else:
@@ -379,7 +395,7 @@ def main():
 	if namespace.start:
 		os.symlink('/run/worker.pid', '/var/lock/rkn-worker')
 		d = Daemon()
-		d.add_conf({'CONN': settings['CONN'], 'DUMP': settings['DUMP']})
+		d.add_conf({'CONN': settings['CONN'], 'DUMP': settings['DUMP']}, settings.get('DAEMON'))
 		d.add_services(services)
 		logger.info("Start Daemon!")
 		d.start()

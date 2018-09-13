@@ -286,8 +286,7 @@ class RKN:
 	"""скачиваем актуальный дамп"""
 	def download(self):
 		try:
-			self.__Dump.download()
-			return 1
+			return self.__Dump.download()
 		except:
 			return 0
 		
