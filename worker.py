@@ -71,7 +71,6 @@ class Daemon(Thread):
 	"""Обработка сервисов"""
 	def work_with_services(self, R, serv):
 		self.logger.info("Generate rules")
-		f = 0
 		if serv.get('DNS') or serv.get('PROXY'):
 			if serv.get('DNS'):
 				dns = serv.get('DNS')
@@ -81,43 +80,40 @@ class Daemon(Thread):
 				except:
 					os.system('touch ' + dns.get('file')+'.old')
 				if serv.get('PROXY'):
-					gen_domains(R, file=serv.get('DNS').get('file'), re_file=serv.get('PROXY').get('dom_file'))
+					gen_domains(R, file=serv.get('DNS').get('file'), re_file=serv.get('PROXY').get('dom_file'),
+						rev_file=serv.get('PROXY').get('rev_file'), gen_wfile=serv.get('PROXY').get('gen_wfile'))
 				else:
 					gen_domains(R, file=serv.get('DNS').get('file'))
 				self.logger.info("Try diff old and new DNS files")
 				if not diff(dns.get('file'), dns.get('file') + '.old'):
 					self.logger.info("is haven't diffirance")
 				else:
-					f = 1
 					for host in dns.get('host').split(','):
 						command = str(dns.get('cmd') + ' ' + dns.get('file') + ' '
 							+ dns.get('user') + '@' + host + ':' + dns.get('path'))
 						self.logger.info(command)
 						os.system(command)
 			else:
-				gen_domains(R, re_file=serv.get('PROXY').get('dom_file'))
+				gen_domains(R, re_file=serv.get('PROXY').get('dom_file'),
+					rev_file=serv.get('PROXY').get('rev_file'), gen_wfile=serv.get('PROXY').get('gen_wfile'))
 		if serv.get('PROXY'):
 			proxy = serv.get('PROXY')
 			self.logger.info("Generate URLs")
 			gen_urls(R, file=proxy.get('url_file'))
-			if not f:
-				self.logger.info("Try diff urls files")
-				if not diff(proxy.get('url_file'), proxy.get('url_conf')):
-					self.logger.info("urls is haven't diffirance")
-					self.logger.info("Try diff domains files")
-					if not diff(proxy.get('dom_file'), proxy.get('dom_conf')):
-						self.logger.info("domains is haven't diffirance")
-					else:
-						f = 1
-				else:
-					f = 1
-			if f:
+			try:
+				os.replace(proxy.get('url_file'), proxy.get('url_conf'))
+				os.replace(proxy.get('gen_wfile'), proxy.get('white_conf'))
+				os.replace(proxy.get('rev_file'), proxy.get('dom_conf'))
+			except:
+				pass
+			if not diff(proxy.get('dom_file'), proxy.get('re_dom_conf')):
+				self.logger.info("domains is haven't diffirance")
+			else:
 				try:
-					os.replace(proxy.get('url_file'), proxy.get('url_conf'))
-					os.replace(proxy.get('dom_file'), proxy.get('dom_conf'))
+					os.replace(proxy.get('dom_file'), proxy.get('re_dom_conf'))
 				except:
 					pass
-				gen_re_white(proxy.get('white_conf'), 'white_dom.list')
+#				gen_re_white(proxy.get('white_conf'), 'white_dom.list')
 				self.logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
 				os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
 		if serv.get('IPTABLES'):
@@ -338,20 +334,36 @@ def gen_urls(R, file='out/url.list'):
 
 """Генератор файлов с регулярными выражениями запрещенных доменов
 и с запрещенными доменами"""	
-def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list'):
+def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list', rev_file='out/rev_dom.list', 
+		white_file='white_dom.list', gen_wfile='out/white_dom.list'):
 	dom_list = open(file, 'w')
 	re_dom_list = open(re_file, 'w')
+	revers_dom_list = open(rev_file, 'w')
 	for line in R.read_domains():
-		i = len(line) - 1
-		str = ''
-		while i >= 0:
-			str += line[i] + '.'
-			i -= 1
-		dom_list.write(str[:-1] + '\n')
-		re_dom_list.write('^([^\/]*\.)?' + re.sub('\.', lambda x: '\\' + x.group(0), str[:-1]) + '(\.)?$\n')
+		revers_dom_list.write('.'.join(line) + '\n')
+		dom_list.write('.'.join(line[::-1]) + '\n')
+		re_dom_list.write('^([^\/]*\.)?' + re.sub('\.', lambda x: '\\' + x.group(0), '.'.join(line[::-1])) + '(\.)?$\n')
 	dom_list.close()
 	re_dom_list.close()
-#	return dom_list
+	revers_dom_list.close()
+	white_list = open(white_file, 'r')
+	gen_wlist = open(gen_wfile, 'w')
+	dom_list = []
+	for line in white_list:
+		dom_list.append(cut_dom(line[:-1]).split('.')[::-1])
+	dom_list = sorted(dom_list)
+	i = 0
+	while i < len(dom_list):
+		try:
+			while DOM_LIST(dom_list[i]).sub_dom(dom_list[i+1]):
+				dom_list.pop(i+1)
+		except IndexError:
+			pass
+		i += 1
+	for dom in dom_list:
+		gen_wlist.write('.'.join(dom) + '\n')
+	white_list.close()
+	gen_wlist.close()
 
 """парсер для настроек из conf файла"""
 def get_settings(config):
