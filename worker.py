@@ -28,7 +28,7 @@ class Daemon(Thread):
 			self.__count = 5
 			self.__utimeout = 3
 			self.__timezone = 0
-		self.__proxy = time.time()
+		self.__proxy = 0
 	def add_services(self, serv):
 		self.__services = serv
 	def __init__(self):
