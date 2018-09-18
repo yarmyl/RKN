@@ -81,7 +81,7 @@ def cut_dom(dom):
 	a = len(dom)
 	if list[-1] == "":
 		a = -1
-	if dom.split('.')[0] in ("www", "*", ""):
+	if dom.split('.')[0] in ("*", ""): # mb www ?
 		return punycode_converter(dom[fsize:a])
 	else:
 		return punycode_converter(dom[:a])

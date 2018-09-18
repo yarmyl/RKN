@@ -350,7 +350,7 @@ def gen_domains(R, file='out/dom.list', re_file='out/re_dom.list', rev_file='out
 	gen_wlist = open(gen_wfile, 'w')
 	dom_list = []
 	for line in white_list:
-		dom_list.append(cut_dom(line[:-1]).split('.')[::-1])
+		dom_list.append(line[:-1].split('.')[::-1])
 	dom_list = sorted(dom_list)
 	i = 0
 	while i < len(dom_list):
