@@ -119,6 +119,7 @@ class Daemon(Thread):
 #				gen_re_white(proxy.get('white_conf'), 'white_dom.list')
 				a = int(proxy.get('timeout')) if proxy.get('timeout') else 3
 				if self.__proxy + 60 * 60 * a < time.time():
+					self.__proxy = time.time()
 					self.logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
 					os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
 		if serv.get('IPTABLES'):
