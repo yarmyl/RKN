@@ -22,10 +22,12 @@ class Daemon(Thread):
 			self.__timeout = int(daemon['timeout'])
 			self.__count = int(daemon['count_try'])
 			self.__utimeout = int(daemon['update_timeout'])
+			self.__timezone = int(daemon['timezone'])
 		else:
 			self.__timeout = 10
 			self.__count = 5
 			self.__utimeout = 3
+			self.__timezone = 0
 	def add_services(self, serv):
 		self.__services = serv
 	def __init__(self):
@@ -46,7 +48,7 @@ class Daemon(Thread):
 					i += 1
 			else:
 #				print("Check update...")
-				if check_update(R, self.__utimeout):
+				if check_update(R, self.__utimeout, self.__timezone):
 					self.logger.info("Update data from new dump...")
 					if update_all(R):
 						if self.__services:
@@ -282,8 +284,8 @@ def check(R, xml):
 """Проверка обновлений 
 Если есть обновление и старше 3х часов предыдущего обновления,
 то True, иначе False"""
-def check_update(R, u):
-	if int(R.check_date()) - int(R.check_last_update_date()) < (5 + u) * 60 * 60:
+def check_update(R, u, tz):
+	if int(R.check_date()) - int(R.check_last_update_date()) < (tz + u) * 60 * 60:
 #	if None:
 		return 0
 	else:
