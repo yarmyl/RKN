@@ -28,6 +28,7 @@ class Daemon(Thread):
 			self.__count = 5
 			self.__utimeout = 3
 			self.__timezone = 0
+		self.__proxy = time.time()
 	def add_services(self, serv):
 		self.__services = serv
 	def __init__(self):
@@ -114,10 +115,12 @@ class Daemon(Thread):
 				try:
 					os.replace(proxy.get('dom_file'), proxy.get('re_dom_conf'))
 				except:
-					pass
+					self.logger.info("Fail to replace squid domain file")
 #				gen_re_white(proxy.get('white_conf'), 'white_dom.list')
-				self.logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
-				os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
+				a = int(proxy.get('timeout')) if proxy.get('timeout') else 3
+				if self.__proxy + 60 * 60 * a < time.time():
+					self.logger.info('Try ' + proxy.get('work') + ' ' + proxy.get('service') + ' service')
+					os.system(proxy.get('init') + ' ' + proxy.get('work') + ' ' + proxy.get('service'))
 		if serv.get('IPTABLES'):
 			service = serv.get('IPTABLES')
 			try:
