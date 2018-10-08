@@ -51,6 +51,7 @@ class Daemon(Thread):
 #				print("Check update...")
 				if check_update(R, self.__utimeout, self.__timezone):
 					self.logger.info("Update data from new dump...")
+					R.change_white()
 					if update_all(R):
 						if self.__services:
 							self.work_with_services(R, self.__services)

@@ -211,7 +211,32 @@ class RKN:
 		for net in nets:
 			ip_list.append(IPNetwork(net[0]))
 		return cidr_merge(ip_list)
-	
+		
+	"""Проверяем белый список и заносим изменения флагов"""
+	def change_white(self):
+		self.logger.info("Search contents with new white domains...")
+		sql = """select distinct domains.content_id from domains, URLs where 
+				URLs.prot like 'http' and URLs.port like '80' and 
+				domains.isUse = 1 and domains.content_id = URLs.content_id and ("""
+		try:
+			white_list_dom = open('white_dom.list', 'r')
+			for line in white_list_dom:
+				sql = sql + 'domains.domain like "' + line[:-1] + '" or '
+			sql = sql[:-3] + ")"
+			white_list_dom.close()
+		except:
+			pass
+		ids = self.__DB.execute(sql)
+		if ids:
+			self.logger.info("Yes, " + str(len(ids)) + " uniq contents found!")
+			self.logger.info("Try update...")
+			self.__DB.execute_many("UPDATE domains SET isUse = 0 where content_id = %s", ids)
+			self.__DB.execute_many("UPDATE URLs SET isUse = 1 where content_id = %s", ids)
+			self.__DB.commit()
+			self.logger.info("Success!")
+		else:
+			self.logger.info("It's Haven't")
+
 	"""считываем из БД URL'ы, которые заблокируем """
 	def read_urls(self):
 		urls = self.__DB.execute("""select distinct url  from URLs where isUse = 1""")
