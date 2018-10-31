@@ -250,8 +250,10 @@ def delta_iptables(a, b, c='0.8'):
 				size += 1
 			elif rul[:2] == '? ':
 				pass
-			else:
+			elif rul[:2] == '  ':
 				size += 1
+			else:
+				print(rul)
 		return res
 	else:
 		return 0
