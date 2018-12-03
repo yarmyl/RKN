@@ -135,17 +135,19 @@ class Daemon(Thread):
 			if not diff(service.get('file'), service.get('file') + '.old'):
 				self.logger.info("domains is haven't diffirance")
 			else:
-				if service.get('weight'):
-					d = delta_iptables(service.get('file') + '.old', service.get('file'), service.get('weight'))
-				else:
-					d = delta_iptables(service.get('file') + '.old', service.get('file'))
-				if d:
-					self.logger.info("Edit iptables rules...")
-					for rul in d:
-						os.system(rul)
-				else:
-					self.logger.info("Restart iptables rules")
-					os.system('bash ' + service.get('file'))
+#				if service.get('weight'):
+#					d = delta_iptables(service.get('file') + '.old', service.get('file'), service.get('weight'))
+#				else:
+#					d = delta_iptables(service.get('file') + '.old', service.get('file'))
+#				if d:
+#					self.logger.info("Edit iptables rules...")
+#					for rul in d:
+#						os.system(rul)
+#				else:
+#					self.logger.info("Restart iptables rules")
+#					os.system('bash ' + service.get('file'))
+				self.logger.info("Restart iptables rules")
+				os.system('iptables-restore --table=nat ' + service.get('file'))
 				self.logger.info("Done!")
 		if serv.get('BGP'):
 			service = serv.get('BGP')
@@ -325,7 +327,8 @@ def gen_black_net(R, file='out/black_net.list', head='iptables.head', tail='ipta
 	net_head = open(head, 'r')
 	net_list.write(net_head.read())
 	for line in R.read_net():
-		net_list.write('iptables -t nat -A PREROUTING -p tcp -d '+str(line)+' -j DNAT --to '+host+'\n')
+#		net_list.write('iptables -t nat -A PREROUTING -p tcp -d '+str(line)+' -j DNAT --to '+host+'\n')
+		net_list.write('-A PREROUTING -p tcp -d '+str(line)+' -j DNAT --to '+host+'\n')
 	net_tail = open(tail, 'r')
 	net_list.write(net_tail.read())
 	net_head.close()
