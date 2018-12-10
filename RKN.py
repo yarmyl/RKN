@@ -242,7 +242,11 @@ class RKN:
 		urls = self.__DB.execute("""select distinct url  from URLs where isUse = 1""")
 		url_list = []
 		for url in urls:
-			url_list.append(url[0])
+			n = url.find('#')
+			if n != -1:
+				url_list.append(url[0][:n])
+			else:
+				url_list.append(url[0])
 		return url_list
 	
 	"""считываем из БД домены, которые заблокируем"""
