@@ -242,7 +242,7 @@ class RKN:
 		urls = self.__DB.execute("""select distinct url  from URLs where isUse = 1""")
 		url_list = []
 		for url in urls:
-			n = url.find('#')
+			n = url[0].find('#')
 			if n != -1:
 				url_list.append(url[0][:n])
 			else:
