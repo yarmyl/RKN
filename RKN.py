@@ -103,6 +103,7 @@ class RKN:
 				pass
 			size_urls = 0
 			dom = 0
+			url = 0
 			for node in content:
 				isUse = 0
 				if node.tag == "decision":
@@ -114,6 +115,8 @@ class RKN:
 							if res[2] in white_dom and res[1] == '80' and res[0] == 'http':
 								isUse = 1
 								size_urls +=1
+							if res[1] not in ["80", "81", "8080", "443"]:
+								url = 1
 						else:
 							self.logger.warning("Bad url: " + node.text)
 						urls.append((content.get("id"), node.text, 
@@ -141,6 +144,8 @@ class RKN:
 									isUse = 1
 								elif size_urls != len(urls):
 									isUse = 1
+							if url:
+								isUse = 1
 						ips.append((content.get("id"), node.text, 
 								node.get("ts").split('+')[0] if node.get("ts") else node.get("ts"), 
 								isUse)
@@ -153,6 +158,8 @@ class RKN:
 									isUse = 1
 								elif size_urls != len(urls):
 									isUse = 1
+							if url:
+								isUse = 1
 						nets.append((content.get("id"), node.text, 
 								node.get("ts").split('+')[0] if node.get("ts") else node.get("ts"), 
 								isUse)
